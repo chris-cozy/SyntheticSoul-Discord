@@ -18,9 +18,9 @@ client.on('ready', () => {
 
 //-----LOGIC-----//
 client.on('messageCreate', (message) => {
-    if (message.content === 'ping') {
+    if (message.content === 'I need help Jas') {
         message.reply({
-            content: 'pong'
+            content: "read this, it's basically my manual https://discord.js.org/#/"
         });
     }
 });
