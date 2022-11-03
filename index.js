@@ -13,7 +13,7 @@ const client = new Client({
 });
 
 client.on('ready', () => {
-    console.log("I'm ready to go online");
+    console.log("I'm getting online");
 });
 
 //-----LOGIC-----//
