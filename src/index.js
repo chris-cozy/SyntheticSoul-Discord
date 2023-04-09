@@ -34,5 +34,21 @@ client.on('messageCreate', (message) => {
     message.reply('testing')
 });
 
+/*
+    Called when a slash command is run
+*/
+client.on('interactionCreate', (interaction) => {
+    if (!interaction.isChatInputCommand()) return;
+    console.log(interaction.commandName)
+
+    if (interaction.commandName === 'greet') {
+        interaction.reply('heyy everyone')
+    }
+
+    if (interaction.commandName === 'ping') {
+        interaction.reply('pongg')
+    }
+})
+
 // discord.js.org/#/
 client.login(process.env.TOKEN);
