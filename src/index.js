@@ -1,10 +1,14 @@
+/**
+ * @author Cozy
+ * @version 0.0.1
+ * @link discord.js.org/#/
+ */
 const dotenv = require('dotenv');
 dotenv.config();
-const { Client, IntentsBitField, EmbedBuilder, ActivityType } = require('discord.js');
+const { Client, IntentsBitField, EmbedBuilder } = require('discord.js');
+const eventHandler = require('./handlers/eventHandler');
 
 //-----SETUP-----//
-STATUS_CHANGE = 10;
-
 const client = new Client({
     // Information the bot needs to recieve
     intents: [
@@ -15,99 +19,32 @@ const client = new Client({
     ]
 });
 
-let status = [
-    {
-        name: 'Crunchyroll',
-        type: ActivityType.Watching
-    },
-    {
-        name: 'Lofi Girl',
-        type: ActivityType.Streaming,
-        url: 'https://www.youtube.com/watch?v=jfKfPfyJRdk'
-    }
-]
-
-function mins_to_millisecs(mins) {
-    return mins * 60000;
-}
-
 //-----EVENT LISTENERS-----//
-/*
-    Called when bot server is turned on.
-    c represents the client (bot instance).
-    setActivity sets the bot's status
-*/
-client.on('ready', (c) => {
-    console.log(`${c.user.tag} is online.`);
-
-    setInterval(() => {
-        // Generate random index
-        let random = Math.floor(Math.random() * status.length);
-        client.user.setActivity(status[random]);
-
-    }, mins_to_millisecs(STATUS_CHANGE));
-});
-
-/*
-    Called when a msg is sent in the server
-*/
+/**
+ * Handle a message sent in the server
+ * @param {message} message - The message sent
+ */
 client.on('messageCreate', (message) => {
     // Ignore msg if author is a bot
     if (message.author.bot) {
         return;
     }
-    console.log(message.content);
-    message.reply('testing')
+    const embed = new EmbedBuilder().setTitle('Message').setColor('Random');
+    embed.addFields(
+        {
+            name: 'Message Content',
+            value: `${message.content}`
+        },
+        {
+            name: 'Message Author',
+            value: `${message.author}`,
+            inline: true
+        }
+    );
+
+    message.reply({ embeds: [embed], ephemeral: true });
 });
 
-/*
-    Called when a slash command is run
-*/
-client.on('interactionCreate', (interaction) => {
-    if (!interaction.isChatInputCommand()) return;
-    console.log(interaction.commandName)
+eventHandler(client);
 
-    if (interaction.commandName === 'greet') {
-        interaction.reply('heyy everyone')
-    }
-
-    if (interaction.commandName === 'ping') {
-        interaction.reply('pongg')
-    }
-
-    if (interaction.commandName === 'add') {
-        const num1 = interaction.options.get('first-number').value;
-        const num2 = interaction.options.get('second-number').value;
-
-        interaction.reply(`the sum is ${num1 + num2}`)
-    }
-
-    if (interaction.commandName === 'multiply') {
-        const num1 = interaction.options.get('first-number').value;
-        const num2 = interaction.options.get('second-number').value;
-
-        interaction.reply(`the sum is ${num1 * num2}`)
-    }
-
-    if (interaction.commandName === 'embed') {
-        const embed = new EmbedBuilder();
-        embed.setTitle('Embed').setDescription('This is an embed').setColor('Random');
-        embed.addFields(
-            {
-                name: 'Field Title',
-                value: 'Random Value',
-                inline: true
-            },
-            {
-                name: 'Field Title',
-                value: 'Random Value',
-                inline: true
-            }
-        )
-
-        interaction.reply({ embeds: [embed] })
-    }
-})
-
-// discord.js.org/#/
 client.login(process.env.TOKEN);
