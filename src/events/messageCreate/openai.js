@@ -29,10 +29,19 @@ module.exports = async (client, message) => {
         return;
     }
 
-    // Give the bot direction
-    let conversationLog = [
-        { role: 'system', content: 'Your name is Jas. You are a good friend. You are flirtatious.' }
-    ]
+    let conversationLog = []
+
+    // Give the bot it's personality
+    conversationLog.push({
+        role: 'system',
+        content: 'Your name is Jas, and you are a flirtatious woman.'
+    });
+
+    // Give the bot it's personality
+    conversationLog.push({
+        role: 'user',
+        content: 'Your name is Jas, and you are a flirtatious woman.'
+    });
 
     // Give the illusion of the bot typing
     await message.channel.sendTyping();
@@ -44,24 +53,41 @@ module.exports = async (client, message) => {
 
     // Add user's convo history with the bot
     prevMessages.forEach((msg) => {
-        // Ignore message if bot is not mentioned
-        if (!message.mentions.has(client.user.id)) {
-            return;
-        }
-        if (msg.author.id !== client.user.id && message.author.bot) {
-            return;
-        }
-        // Ensure that the messages being added have a consistent sender
-        if (msg.author.id !== message.author.id) {
+        // Pattern for removing mentions - currently unused
+        let mention = /<@(.*?)>/;
+
+        // Ignore messages from other bots
+        if ((msg.author.id !== client.user.id) && message.author.bot) {
             return;
         }
 
-        conversationLog.push({
-            role: 'user',
-            content: msg.content,
-        });
+        // Ensure that the messages being added are from the original message sender, or the bot
+        if ((msg.author.id !== message.author.id) && (msg.author.id !== client.user.id)) {
+            return;
+        }
+
+        // Check if bot is mentioned
+        if ((msg.mentions.has(client.user.id)) || (msg.author.id == client.user.id)) {
+
+            // Add messages to conversation log, with appropriate role
+            if (msg.author.id == message.author.id) {
+                conversationLog.push({
+                    role: 'user',
+                    content: msg.content,
+                });
+            } else if (msg.author.id == client.user.id) {
+                conversationLog.push({
+                    role: 'assistant',
+                    content: msg.content,
+                });
+            } else {
+                return;
+            }
+        }
 
     });
+
+    console.log(conversationLog);
 
     // Grab result from openai
     const result = await openai.createChatCompletion({
