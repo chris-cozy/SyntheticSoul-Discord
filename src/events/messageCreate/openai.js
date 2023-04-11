@@ -2,16 +2,15 @@ const { EmbedBuilder } = require('discord.js');
 const { Configuration, OpenAIApi } = require('openai');
 
 /**
- * Handle a message sent in the server
+ * Handle a message sent in the server, using the openai gpt-3.5 API
  * @param {*} client - The bot
  * @param {object} message - The message which was sent
  */
 module.exports = async (client, message) => {
-    // Setup config class
+    // Setup openai connection
     const configuration = new Configuration({
         apiKey: process.env.OPENAI_API_KEY
     });
-
     const openai = new OpenAIApi(configuration);
 
 
@@ -19,10 +18,13 @@ module.exports = async (client, message) => {
     if (message.author.bot) {
         return;
     }
+
     // Ignore msg if not sent in the right channel
+    /*
     if (message.channel.id !== process.env.OPENAI_CHANNEL_ID) {
         console.log('not the designated channel');
     }
+    */
 
     // Ignore message if bot is not mentioned
     if (!message.mentions.has(client.user.id)) {
@@ -31,27 +33,30 @@ module.exports = async (client, message) => {
 
     let conversationLog = []
 
-    // Give the bot it's personality
+    // Give the language model instructions
     conversationLog.push({
         role: 'system',
         content: 'Your name is Jas, and you are a flirtatious woman.'
     });
 
-    // Give the bot it's personality
+    // Give the language model instructions
     conversationLog.push({
         role: 'user',
         content: 'Your name is Jas, and you are a flirtatious woman.'
     });
 
-    // Give the illusion of the bot typing
+    // Send the bot typing status
     await message.channel.sendTyping();
 
     // Grab previous messages in channel
-    let prevMessages = await message.channel.messages.fetch({ limit: 15 });
+    const msgLimit = 15
+    let prevMessages = await message.channel.messages.fetch({ limit: msgLimit });
     // Messages are in latest-oldest order, so flip
     prevMessages.reverse();
 
-    // Add user's convo history with the bot
+    /* 
+        Loop through prev msgs to find conversation context between the msg sender and the bot
+    */
     prevMessages.forEach((msg) => {
         // Pattern for removing mentions - currently unused
         let mention = /<@(.*?)>/;
@@ -66,7 +71,7 @@ module.exports = async (client, message) => {
             return;
         }
 
-        // Check if bot is mentioned
+        // Check if bot was mentioned, or if msg was from the bot
         if ((msg.mentions.has(client.user.id)) || (msg.author.id == client.user.id)) {
 
             // Add messages to conversation log, with appropriate role
@@ -87,9 +92,7 @@ module.exports = async (client, message) => {
 
     });
 
-    console.log(conversationLog);
-
-    // Grab result from openai
+    // Grab result object from openai
     const result = await openai.createChatCompletion({
         model: 'gpt-3.5-turbo',
         messages: conversationLog,
