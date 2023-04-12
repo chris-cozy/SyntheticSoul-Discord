@@ -2,8 +2,8 @@ const { Client, Interaction, ApplicationCommandOptionType, PermissionFlagsBits }
 
 /**
  * @brief Kick a user from server
- * @param {options} option1 - The user to ban
- * @param {options} option2 - The reason for banning
+ * @param {options} option1 - The user to kick
+ * @param {options} option2 - The reason for kicking
  */
 module.exports = {
     name: 'kick',
@@ -65,7 +65,7 @@ module.exports = {
             await interaction.editReply("I can't kick that user because they have the same or higher role than me..");
         }
 
-        // Ban the target user
+        // Timeout the target user
         try {
             await targetUser.kick({ reason });
             await interaction.editReply(`user ${targetUser} was kicked\nreason: ${reason}`);
