@@ -6,6 +6,7 @@ module.exports = {
     description: 'ping pong - client and websocket ping',
     devonly: true,
     testOnly: true,
+    deleted: false,
 
     callback: async (client, interaction) => {
         await interaction.deferReply();

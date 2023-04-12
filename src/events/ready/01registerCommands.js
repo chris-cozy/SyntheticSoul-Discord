@@ -8,6 +8,10 @@ module.exports = async (client) => {
         const localCommands = getLocalCommands();
         const applicationCommands = await getApplicationCommands(client, testServer);
 
+        // Delete a command by id
+        // applicationCommands.delete('1094985345889738852');
+
+
         for (const localCommand of localCommands) {
             const { name, description, options } = localCommand;
 
@@ -16,13 +20,16 @@ module.exports = async (client) => {
                 (cmd) => cmd.name === name
             );
 
+            // If existing command already exists
             if (existingCommand) {
+                // Check if local command is marked as deleted
                 if (localCommand.deleted) {
                     await applicationCommands.delete(existingCommand.id);
                     console.log(`Deleted command "${name}".`);
                     continue;
                 }
 
+                // Check if local command is different
                 if (areCommandsDifferent(existingCommand, localCommand)) {
                     await applicationCommands.edit(existingCommand.id, { description, options });
                     console.log(`Edited command "${name}".`);

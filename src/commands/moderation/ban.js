@@ -11,6 +11,7 @@ module.exports = {
     description: 'in-development',
     devonly: false,
     testOnly: false,
+    deleted: false,
     options: [
         {
             name: 'target-user',

@@ -12,10 +12,12 @@ module.exports = (existingCommand, localCommand) => {
                 (choice) => choice.name === localChoice.name
             );
 
+            // Check if there is not an existing command that matches
             if (!existingChoice) {
                 return true;
             }
 
+            // Check if the two commands don't have the same value
             if (localChoice.value !== existingChoice.value) {
                 return true;
             }
