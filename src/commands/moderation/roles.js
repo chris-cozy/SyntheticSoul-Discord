@@ -15,20 +15,16 @@ module.exports = {
 
             const roles = [
                 {
-                    id: '816907365298995240',
-                    label: 'residents - pink'
-                },
-                {
-                    id: '819468075941756928',
-                    label: 'customer'
-                },
-                {
                     id: '819484571971354655',
                     label: 'staff'
                 },
                 {
                     id: '945364422451408997',
-                    label: 'residents - purple'
+                    label: 'residents'
+                },
+                {
+                    id: '819468075941756928',
+                    label: 'customer'
                 }
             ]
 
