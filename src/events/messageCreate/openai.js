@@ -49,7 +49,8 @@ module.exports = async (client, message) => {
     await message.channel.sendTyping();
 
     // Grab previous messages in channel
-    const msgLimit = 15
+    const logLimit = 20;
+    const msgLimit = 100;
     let prevMessages = await message.channel.messages.fetch({ limit: msgLimit });
     // Messages are in latest-oldest order, so flip
     prevMessages.reverse();
@@ -71,25 +72,27 @@ module.exports = async (client, message) => {
             return;
         }
 
-        // Check if bot was mentioned, or if msg was from the bot
-        if ((msg.mentions.has(client.user.id)) || (msg.author.id == client.user.id)) {
+        // Check if convo log has space
+        if (conversationLog.length < logLimit) {
+            // Check if bot was mentioned, or if msg was from the bot
+            if ((msg.mentions.has(client.user.id)) || (msg.author.id == client.user.id)) {
 
-            // Add messages to conversation log, with appropriate role
-            if (msg.author.id == message.author.id) {
-                conversationLog.push({
-                    role: 'user',
-                    content: msg.content,
-                });
-            } else if (msg.author.id == client.user.id) {
-                conversationLog.push({
-                    role: 'assistant',
-                    content: msg.content,
-                });
-            } else {
-                return;
+                // Add messages to conversation log, with appropriate role
+                if (msg.author.id == message.author.id) {
+                    conversationLog.push({
+                        role: 'user',
+                        content: msg.content,
+                    });
+                } else if (msg.author.id == client.user.id) {
+                    conversationLog.push({
+                        role: 'assistant',
+                        content: msg.content,
+                    });
+                } else {
+                    return;
+                }
             }
         }
-
     });
 
     // Grab result object from openai
