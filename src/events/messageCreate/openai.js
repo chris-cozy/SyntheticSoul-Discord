@@ -50,11 +50,12 @@ module.exports = async (client, message) => {
 
     // Grab previous messages in channel
     const logLimit = 20;
-    const msgLimit = 100;
+    const msgLimit = 20;
     let prevMessages = await message.channel.messages.fetch({ limit: msgLimit });
     // Messages are in latest-oldest order, so flip
     prevMessages.reverse();
 
+    console.log(prevMessages);
     /* 
         Loop through prev msgs to find conversation context between the msg sender and the bot
     */
@@ -94,6 +95,8 @@ module.exports = async (client, message) => {
             }
         }
     });
+
+    console.log(conversationLog);
 
     // Grab result object from openai
     const result = await openai.createChatCompletion({
