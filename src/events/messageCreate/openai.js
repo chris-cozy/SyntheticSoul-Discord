@@ -55,7 +55,6 @@ module.exports = async (client, message) => {
     // Messages are in latest-oldest order, so flip
     prevMessages.reverse();
 
-    console.log(prevMessages);
     /* 
         Loop through prev msgs to find conversation context between the msg sender and the bot
     */
@@ -95,8 +94,6 @@ module.exports = async (client, message) => {
             }
         }
     });
-
-    console.log(conversationLog);
 
     // Grab result object from openai
     const result = await openai.createChatCompletion({
