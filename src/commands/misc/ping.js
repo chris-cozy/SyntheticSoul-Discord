@@ -1,5 +1,5 @@
 /**
- * Send the client's websocket ping
+ * @brief Send the client's websocket ping
  */
 module.exports = {
     name: 'ping',
