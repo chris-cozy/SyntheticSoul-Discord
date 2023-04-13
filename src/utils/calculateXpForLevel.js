@@ -7,6 +7,6 @@ module.exports = (level) => {
     const x = 0.3;
     const y = 2;
 
-    const xp = (level / x) ^ y
+    const xp = (level / x) ** y;
     return xp
 };
