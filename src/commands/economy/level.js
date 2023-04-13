@@ -73,7 +73,7 @@ module.exports = {
             .setCurrentXP(fetchedUser.xp)
             .setRequiredXP(calculateXpForLevel(fetchedUser.level))
             //.setStatus(targetUserObject.presence.status)
-            .setProgressBar('RANDOM', 'COLOR')
+            .setProgressBar('#46923c', 'COLOR')
             .setUsername(targetUserObject.user.username)
             .setDiscriminator(targetUserObject.user.discriminator)
 
