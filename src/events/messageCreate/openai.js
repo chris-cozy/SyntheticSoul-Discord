@@ -81,37 +81,34 @@ module.exports = async (client, message) => {
                 });
             } else if (msg.author.id == client.user.id) {
 
+                conversationLog.push({
+                    role: 'assistant',
+                    content: msg.content,
+                });
+
+                /*
+                * Grab the message that msg is a reply to, and check if the
+                * author of that message is the same author of the original message
+                * This makes sure that the bot is not adding their replies to other users
+                * to the conversation log with this user
+                */
+
+                /*
                 // Check if message is a reply to another
                 if (msg.reference) {
-                    try {
-                        /*
-                        * Grab the message that msg is a reply to, and check if the
-                        * author of that message is the same author of the original message
-                        * This makes sure that the bot is not adding their replies to other users
-                        * to the conversation log with this user
-                        */
-                        msg.fetchReference().then(
-                            (refMsg) => {
-                                //console.log(refMsg);
-                                if (refMsg.author.id == message.author.id) {
-                                    console.log(msg);
-                                    conversationLog.push({
-                                        role: 'assistant',
-                                        content: msg.content,
-                                    });
-                                }
-                            }
-                        );
-
-                    } catch (error) {
-                        console.log(`there was an error: ${error}`);
+                    
+                    refMsg = await msg.fetchReference();
+                    if (refMsg.author.id == message.author.id) {
+                        //console.log(msg);
+                        conversationLog.push({
+                            role: 'assistant',
+                            content: msg.content,
+                        });
                     }
-
-                }
-
-            } else {
-                return;
+                */
             }
+        } else {
+            return;
         }
     });
 
