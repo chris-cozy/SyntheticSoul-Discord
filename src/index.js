@@ -1,7 +1,10 @@
 /**
  * @author Cozy
- * @version 1.4.2
- * @link discord.js.org/#/
+ * @version 2.0.0
+ * @link https://discord.js.org/#/
+ * @link https://mongoosejs.com/docs/
+ * @link https://canvacord.js.org/docs/
+ * @link https://discordjs.guide/miscellaneous/useful-packages.html#day-js
  */
 const dotenv = require('dotenv');
 dotenv.config();
@@ -16,7 +19,9 @@ const client = new Client({
         IntentsBitField.Flags.Guilds,
         IntentsBitField.Flags.GuildMembers,
         IntentsBitField.Flags.GuildMessages,
-        IntentsBitField.Flags.MessageContent
+        IntentsBitField.Flags.MessageContent,
+        // Needed for canvacord status
+        IntentsBitField.Flags.GuildPresences,
     ]
 });
 
@@ -28,10 +33,8 @@ const client = new Client({
         console.log(`connected to the local database.`);
 
         eventHandler(client);
+        client.login(process.env.TOKEN);
     } catch (error) {
         console.log(`There was an error: ${error}`);
     }
-
 })();
-
-client.login(process.env.TOKEN);
