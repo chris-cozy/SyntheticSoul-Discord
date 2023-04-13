@@ -48,7 +48,7 @@ module.exports = async (client, message) => {
     await message.channel.sendTyping();
 
     // Grab previous messages in channel
-    const msgLimit = 25;
+    const msgLimit = 15;
     let prevMessages = await message.channel.messages.fetch({ limit: msgLimit });
     // Messages are in latest-oldest order, so flip
     prevMessages.reverse();
@@ -112,7 +112,7 @@ module.exports = async (client, message) => {
         }
     });
 
-    console.log(conversationLog);
+    //console.log(conversationLog);
 
     // Grab result object from openai
     const result = await openai.createChatCompletion({
