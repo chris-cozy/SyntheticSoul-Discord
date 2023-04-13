@@ -62,7 +62,7 @@ module.exports = async (client, message) => {
                 user.xp = 0;
                 user.level += 1;
 
-                message.channel.send(`${message.member}, you have leveled up to level ${user.level}!`);
+                message.channel.send(`${message.member}, you have leveled up to **level ${user.level}**!`);
             }
 
             await user.save().catch((e) => {
