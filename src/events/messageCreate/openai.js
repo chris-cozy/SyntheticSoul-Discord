@@ -1,4 +1,3 @@
-const { EmbedBuilder } = require('discord.js');
 const { Configuration, OpenAIApi } = require('openai');
 
 /**
@@ -98,21 +97,4 @@ module.exports = async (client, message) => {
     })
 
     message.reply(result.data.choices[0].message);
-
-    /*
-    const embed = new EmbedBuilder().setTitle('Message').setColor('Random');
-    embed.addFields(
-        {
-            name: 'Message Content',
-            value: `${message.content}`
-        },
-        {
-            name: 'Message Author',
-            value: `${message.author}`,
-            inline: true
-        }
-    );
-
-    message.reply({ embeds: [embed], ephemeral: true });
-    */
 };
