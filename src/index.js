@@ -1,6 +1,6 @@
 /**
  * @author Cozy
- * @version 1.4.0
+ * @version 1.4.1
  * @link discord.js.org/#/
  */
 const dotenv = require('dotenv');

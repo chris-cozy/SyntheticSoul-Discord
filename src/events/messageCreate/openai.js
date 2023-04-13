@@ -35,20 +35,20 @@ module.exports = async (client, message) => {
     // Give the language model instructions
     conversationLog.push({
         role: 'system',
-        content: 'Your name is Jas, and you are a flirtatious woman.'
+        content: 'Your name is Jas, and you are a young woman.'
     });
 
     // Give the language model instructions
     conversationLog.push({
         role: 'user',
-        content: 'Your name is Jas, and you are a flirtatious woman.'
+        content: 'Your name is Jas, and you are a young woman.'
     });
 
     // Send the bot typing status
     await message.channel.sendTyping();
 
     // Grab previous messages in channel
-    const msgLimit = 20;
+    const msgLimit = 25;
     let prevMessages = await message.channel.messages.fetch({ limit: msgLimit });
     // Messages are in latest-oldest order, so flip
     prevMessages.reverse();
@@ -80,15 +80,42 @@ module.exports = async (client, message) => {
                     content: msg.content,
                 });
             } else if (msg.author.id == client.user.id) {
-                conversationLog.push({
-                    role: 'assistant',
-                    content: msg.content,
-                });
+
+                // Check if message is a reply to another
+                if (msg.reference) {
+                    try {
+                        /*
+                        * Grab the message that msg is a reply to, and check if the
+                        * author of that message is the same author of the original message
+                        * This makes sure that the bot is not adding their replies to other users
+                        * to the conversation log with this user
+                        */
+                        msg.fetchReference().then(
+                            (refMsg) => {
+                                //console.log(refMsg);
+                                if (refMsg.author.id == message.author.id) {
+                                    console.log(msg);
+                                    conversationLog.push({
+                                        role: 'assistant',
+                                        content: msg.content,
+                                    });
+                                }
+                            }
+                        );
+
+                    } catch (error) {
+                        console.log(`there was an error: ${error}`);
+                    }
+
+                }
+
             } else {
                 return;
             }
         }
     });
+
+    console.log(conversationLog);
 
     // Grab result object from openai
     const result = await openai.createChatCompletion({
