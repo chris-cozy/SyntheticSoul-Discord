@@ -2,6 +2,10 @@ const { Client, Message } = require('discord.js');
 const userLevel = require('../../schemas/level');
 const calculateXpForLevel = require('../../utils/calculateXpForLevel');
 
+const cooldowns = new Set();
+// Cooldown length, in ms
+const cooldownLength = 5000;
+
 /**
  * @brief Calculate a random number between the bounds
  * @param {Number} min 
@@ -19,6 +23,10 @@ function randomXp(min, max) {
  * @param {Message} message - The message which was sent
  */
 module.exports = async (client, message) => {
+    // Ignore method if the author has an xp cooldown
+    if (cooldowns.has(message.author.id)) {
+        return;
+    }
 
     // Ignore msg if author is a bot
     if (message.author.bot) {
@@ -60,6 +68,13 @@ module.exports = async (client, message) => {
             await user.save().catch((e) => {
                 console.log(`There was an error saving the updated level: ${e}`);
             });
+
+            // Put user on xp cooldown
+            cooldowns.add(message.author.id);
+            setTimeout(() => {
+                cooldowns.delete(message.author.id);
+            }, cooldownLength);
+
         } else {
             const newUser = new userLevel({
                 userId: message.author.id,
