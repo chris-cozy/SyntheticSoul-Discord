@@ -1,14 +1,16 @@
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle, Client, Interaction } = require("discord.js");
 
 /**
- * @brief Handle the assignment of roles, based on the button choice
+ * @brief Handle role assignment based on the button selected
+ * @param {Client} client 
+ * @param {Interaction} interaction 
+ * @returns 
  */
 module.exports = async (client, interaction) => {
 
     if (!interaction.isButton()) return;
 
     try {
-        // Set initial message
         await interaction.deferReply({ ephemeral: true });
 
         const role = interaction.guild.roles.cache.get(interaction.customId);

@@ -1,9 +1,11 @@
 const getAllFiles = require("../utils/getAllFiles")
 const path = require('path');
+const { Client } = require('discord.js');
 
 /**
- * Handles files/directories in events directory
- * @param {client} client - The bot
+ * @brief Handle files/directories in events directory. Extract files from each event subdir,
+ * then run the module when the named event occurs.
+ * @param {Client} client - The bot
  */
 module.exports = (client) => {
     // Targeting events directory, grabbing subdirs

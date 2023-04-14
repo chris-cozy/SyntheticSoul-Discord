@@ -2,10 +2,10 @@ const fs = require('fs');
 const path = require('path');
 
 /**
- * Grab file paths or subdir paths in a directory
- * @param {string} directory - Directory path to search
- * @param {boolean} foldersOnly - Determine if only return subdirs
- * @returns Array of file paths or subdir paths
+ * @brief Grab file paths or subdir paths in a directory
+ * @param {String} directory - Directory path to search
+ * @param {Boolean} foldersOnly - Determine if only return subdirs
+ * @returns Array of file paths or subdir paths (Array)
  */
 module.exports = (directory, foldersOnly = false) => {
     let fileNames = [];

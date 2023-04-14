@@ -1,11 +1,6 @@
 const { Client, Interaction, ApplicationCommandOptionType, PermissionFlagsBits } = require('discord.js');
 const ms = require('ms');
 
-/**
- * @brief Timeout a user in the server
- * @param {options} option1 - The user to timeout
- * @param {options} option2 - The reason for timeout
- */
 module.exports = {
     name: 'timeout',
     description: 'timeout a member of the server',

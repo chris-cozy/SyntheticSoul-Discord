@@ -1,7 +1,7 @@
 /**
- * Calculate the amount of xp needed for a certain level
+ * @brief Calculate the amount of xp needed for a certain level
  * @param {Number} level - level desired
- * @returns number of xp needed for specified level
+ * @returns number of xp needed for specified level (Number)
  */
 module.exports = (level) => {
     const x = 0.3;

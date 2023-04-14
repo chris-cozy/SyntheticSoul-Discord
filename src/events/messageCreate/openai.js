@@ -1,9 +1,10 @@
 const { Configuration, OpenAIApi } = require('openai');
+const { Client, Message } = require('discord.js');
 
 /**
- * Handle a message sent in the server, using the openai gpt-3.5 API
- * @param {*} client - The bot
- * @param {object} message - The message which was sent
+ * @brief Handle a message sent in the server, using the openai gpt-3.5 API
+ * @param {Client} client - The bot
+ * @param {Message} message - The message which was sent
  */
 module.exports = async (client, message) => {
     // Setup openai connection
@@ -35,13 +36,13 @@ module.exports = async (client, message) => {
     // Give the language model instructions
     conversationLog.push({
         role: 'system',
-        content: 'Your name is Jas, and you are a young woman.'
+        content: 'Your name is Jas, and you are a young woman. Talk like you are a young woman.'
     });
 
     // Give the language model instructions
     conversationLog.push({
         role: 'user',
-        content: 'Your name is Jas, and you are a young woman.'
+        content: 'Your name is Jas, and you are a young woman. Talk like you are a young woman.'
     });
 
     // Send the bot typing status
@@ -53,9 +54,7 @@ module.exports = async (client, message) => {
     // Messages are in latest-oldest order, so flip
     prevMessages.reverse();
 
-    /* 
-        Loop through prev msgs to find conversation context between the msg sender and the bot
-    */
+    // Loop through prev msgs to find conversation context between the msg sender and the bot
     prevMessages.forEach((msg) => {
         // Pattern for removing mentions - currently unused
         let mention = /<@(.*?)>/;
@@ -113,8 +112,6 @@ module.exports = async (client, message) => {
     });
 
     //console.log(conversationLog);
-
-    // Grab result object from openai
     const result = await openai.createChatCompletion({
         model: 'gpt-3.5-turbo',
         messages: conversationLog,

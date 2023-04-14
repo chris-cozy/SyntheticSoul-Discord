@@ -10,6 +10,7 @@ const cooldownLength = 5000;
  * @brief Calculate a random number between the bounds
  * @param {Number} min 
  * @param {Number} max 
+ * @return A number for the xp
  */
 function randomXp(min, max) {
     min = Math.ceil(min);
@@ -18,7 +19,7 @@ function randomXp(min, max) {
 }
 
 /**
- * @brief Grant a user xp for communicating with the bot
+ * @brief Grant a user xp for communicating with the bot, store in database
  * @param {Client} client - The bot
  * @param {Message} message - The message which was sent
  */
@@ -44,15 +45,15 @@ module.exports = async (client, message) => {
     }
 
     const xpGranted = randomXp(5, 15);
-    // Search database for a specific field type
+
     const query = {
         userId: message.author.id,
         guildId: message.guild.id,
     };
 
     try {
-        // Check database if userId and guildId exist. 
-        // If so, grant them xp. If not, create user entry in database
+        // Check database for user. 
+        // If they exist, grant them xp. If not, create user entry in database
         const user = await userLevel.findOne(query);
 
         if (user) {
@@ -65,6 +66,7 @@ module.exports = async (client, message) => {
                 message.channel.send(`${message.member}, you have leveled up to **level ${user.level}**!`);
             }
 
+            // Save database updates
             await user.save().catch((e) => {
                 console.log(`There was an error saving the updated level: ${e}`);
             });

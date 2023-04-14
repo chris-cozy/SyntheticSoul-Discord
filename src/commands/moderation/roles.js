@@ -1,14 +1,17 @@
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
+const { ActionRowBuilder, ButtonBuilder, ButtonStyle, Client, Interaction } = require("discord.js");
 
-/**
- * @brief Send the client's websocket ping
- */
 module.exports = {
     name: 'roles',
     description: 'send roles selector',
     devonly: false,
     testOnly: false,
 
+    /**
+     * @brief Send the client's websocket ping
+     * @param {Client} client 
+     * @param {Interaction} interaction 
+     * @returns 
+     */
     callback: async (client, interaction) => {
         try {
             await interaction.deferReply();
@@ -29,7 +32,7 @@ module.exports = {
             ]
 
             // Check if the correct channel exists
-            const channel = await client.channels.cache.get('816906701839532064');
+            const channel = await client.channels.cache.get(process.env.ROLE_CHANNEL);
             if (!channel) return;
 
             const row = new ActionRowBuilder();
@@ -49,6 +52,5 @@ module.exports = {
         } catch (error) {
             console.log(`There was an error: ${error}`);
         }
-
     },
 }

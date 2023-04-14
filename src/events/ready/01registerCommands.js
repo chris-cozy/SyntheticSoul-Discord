@@ -2,7 +2,12 @@ const { testServer } = require('../../../config.json');
 const getLocalCommands = require('../../utils/getLocalCommands');
 const getApplicationCommands = require('../../utils/getApplicationCommands');
 const areCommandsDifferent = require('../../utils/areCommandsDifferent');
+const { Client } = require('discord.js');
 
+/**
+ * @brief Register/Edit/Delete local and application slash commands
+ * @param {Client} client 
+ */
 module.exports = async (client) => {
     try {
         const localCommands = getLocalCommands();
@@ -20,9 +25,9 @@ module.exports = async (client) => {
                 (cmd) => cmd.name === name
             );
 
-            // If existing command already exists
+            // If existing command for the local one already exists
             if (existingCommand) {
-                // Check if local command is marked as deleted
+                // Delete command if local version is marked as deleted
                 if (localCommand.deleted) {
                     await applicationCommands.delete(existingCommand.id);
                     console.log(`Deleted command "${name}".`);

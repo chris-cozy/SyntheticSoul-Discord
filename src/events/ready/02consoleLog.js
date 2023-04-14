@@ -1,11 +1,12 @@
-const { ActivityType } = require('discord.js');
+const { ActivityType, Client } = require('discord.js');
 
 /**
- * Alert that the bot is online
- * @param {*} client - The bot
+ * @brief Alert that the bot is online, and set the status
+ * @param {Client} client - The bot
  */
 module.exports = (client) => {
     try {
+        // Possible statuses
         let status = [
             {
                 name: 'Crunchyroll',
@@ -23,6 +24,7 @@ module.exports = (client) => {
 
         console.log(`${client.user.tag} is online.`);
 
+        // Start status change cycle
         setInterval(() => {
             // Generate random index
             let random = Math.floor(Math.random() * status.length);

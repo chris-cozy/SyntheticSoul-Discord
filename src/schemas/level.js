@@ -1,5 +1,8 @@
 const { Schema, model } = require('mongoose');
 
+/**
+ * Database schema for user levels
+ */
 const levelSchema = new Schema({
     userId: {
         type: String,

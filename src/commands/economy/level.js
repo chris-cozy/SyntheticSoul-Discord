@@ -3,10 +3,6 @@ const userLevel = require('../../schemas/level');
 const canvacord = require('canvacord');
 const calculateXpForLevel = require('../../utils/calculateXpForLevel');
 
-
-/**
- * @brief Check a user's level
- */
 module.exports = {
     name: 'level',
     description: "display a user's level",
@@ -19,7 +15,7 @@ module.exports = {
     ],
 
     /**
-     * 
+     * @brief Check a user's level, sending a rank card
      * @param {Client} client 
      * @param {Interaction} interaction 
      */

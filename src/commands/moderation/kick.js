@@ -1,10 +1,5 @@
 const { Client, Interaction, ApplicationCommandOptionType, PermissionFlagsBits } = require('discord.js');
 
-/**
- * @brief Kick a user from server
- * @param {options} option1 - The user to kick
- * @param {options} option2 - The reason for kicking
- */
 module.exports = {
     name: 'kick',
     description: 'kick a member from the server',

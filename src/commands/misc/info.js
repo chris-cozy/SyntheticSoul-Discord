@@ -1,8 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
-/**
- * @brief Send embed with information about the 
- * bot
- */
+const { Client, Interaction } = require('discord.js');
+
 module.exports = {
     name: 'info',
     description: 'information about bot',
@@ -10,11 +8,15 @@ module.exports = {
     testOnly: false,
     deleted: false,
 
+    /**
+     * @brief Send an embed with bot information
+     * @param {Client} client 
+     * @param {Interaction} interaction 
+     */
     callback: (client, interaction) => {
         //await interaction.deferReply();
 
         try {
-
             let verif;
             if (client.user.verified) {
                 verif = 'true';
@@ -24,7 +26,7 @@ module.exports = {
             // Create embed to send
             const embed = new EmbedBuilder()
                 .setTitle(client.user.username)
-                //.setColor(client.user.accentColor)
+                .setColor('Random')
                 .setDescription(`an gpt-enabled discord assistant`)
                 .setURL('https://discord.js.org/#/')
                 .addFields(

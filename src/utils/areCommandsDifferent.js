@@ -1,8 +1,8 @@
 /**
- * Check if commands are different
+ * @brief Check if commands are different
  * @param {object} existingCommand - Command object
  * @param {object} localCommand - Command object
- * @returns boolean
+ * @returns whether the commands are different (boolean)
  */
 module.exports = (existingCommand, localCommand) => {
     // Check if the choices are different

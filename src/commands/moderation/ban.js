@@ -1,10 +1,5 @@
 const { Client, Interaction, ApplicationCommandOptionType, PermissionFlagsBits } = require('discord.js');
 
-/**
- * @brief Ban a user from server
- * @param {options} option1 - The user to ban
- * @param {options} option2 - The reason for banning
- */
 module.exports = {
     name: 'ban',
     description: 'ban a member from the server',
