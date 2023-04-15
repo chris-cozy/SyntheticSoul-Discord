@@ -15,6 +15,8 @@ This bot has integrated gpt-3.5 turbo capabilities, and can be conversed with by
 - /roles - Sends role buttons, allowing a user to change their role.
 ### Economic Commands
 - /level - Sends a rank card which displays the specified user's level, xp, and rank in the server.
+- /daily - Collects the user's daily allowance.
+- /balance - Checks the specified user's balance
 ## Prerequisites
 Node.js
 
