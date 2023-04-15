@@ -16,7 +16,33 @@ module.exports = (client) => {
                 name: 'Lofi Girl',
                 type: ActivityType.Streaming,
                 url: 'https://www.youtube.com/watch?v=jfKfPfyJRdk'
-            }
+            },
+            {
+                name: 'Lofi Boy',
+                type: ActivityType.Streaming,
+                url: 'https://www.youtube.com/watch?v=MVPTGNGiI-4'
+            },
+            {
+                name: 'Valorant',
+                type: ActivityType.Streaming,
+                url: 'https://www.youtube.com/watch?v=X0_R1e-HSvA'
+            },
+            {
+                name: 'Spotify',
+                type: ActivityType.Listening,
+            },
+            {
+                name: 'Tokyo Ghoul',
+                type: ActivityType.Watching,
+            },
+            {
+                name: 'Violet Evergarden',
+                type: ActivityType.Watching,
+            },
+            {
+                name: 'Deathnote',
+                type: ActivityType.Watching,
+            },
         ]
 
         const statusChangeMins = 10;
