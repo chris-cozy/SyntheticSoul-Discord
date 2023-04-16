@@ -50,7 +50,7 @@ module.exports = {
             await role.save();
             interaction.editReply("auto role has been configured. to disable it, run '/autorole-disable'");
         } catch (error) {
-
+            console.log(`there was an error: $${error}`);
         }
     }
 }
