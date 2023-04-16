@@ -28,8 +28,9 @@ module.exports = {
     callback: async (client, interaction) => {
         await interaction.deferReply({ ephemeral: true });
 
-        const role = interaction.options.get('role').value;
+        const roleId = interaction.options.get('role').value;
         const roleReason = interaction.options.get('reason').value;
+        const role = await interaction.guild.roles.fetch(roleId);
 
         if (!interaction.inGuild()) {
             interaction.editReply("you can only run this command inside of a server..");
@@ -37,9 +38,9 @@ module.exports = {
         }
 
         try {
-            interaction.guild.roles.delete(role, roleReason);
+            interaction.guild.roles.delete(roleId, roleReason);
 
-            interaction.editReply(`you have successfully deleted the role **${role}**`);
+            interaction.editReply(`you have successfully deleted the role **${role.name}**`);
         } catch (error) {
             console.log(`there was an error: $${error}`);
         }
