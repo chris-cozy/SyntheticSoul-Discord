@@ -12,7 +12,7 @@ module.exports = {
      * @param {Interaction} interaction 
      */
     callback: async (client, interaction) => {
-        await interaction.deferReply();
+        await interaction.deferReply({ ephemeral: true });
 
         if (!interaction.inGuild()) {
             interaction.editReply("you can only run this command inside of a server..");
