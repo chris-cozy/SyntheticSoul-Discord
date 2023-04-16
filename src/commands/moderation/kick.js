@@ -20,7 +20,7 @@ module.exports = {
         }
     ],
     permissionsRequired: [PermissionFlagsBits.KickMembers],
-    botPermissionsRequired: [PermissionFlagsBits.KickMembers],
+    botPermissions: [PermissionFlagsBits.KickMembers],
 
     /**
      * @brief Kick a user from the server

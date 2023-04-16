@@ -27,7 +27,7 @@ module.exports = {
         }
     ],
     permissionsRequired: [PermissionFlagsBits.MuteMembers],
-    botPermissionsRequired: [PermissionFlagsBits.MuteMembers],
+    botPermissions: [PermissionFlagsBits.MuteMembers],
 
     /**
      * @brief Timeout a user in the server

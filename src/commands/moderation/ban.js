@@ -20,7 +20,7 @@ module.exports = {
         }
     ],
     permissionsRequired: [PermissionFlagsBits.BanMembers],
-    botPermissionsRequired: [PermissionFlagsBits.BanMembers],
+    botPermissions: [PermissionFlagsBits.BanMembers],
 
     /**
      * @brief Ban a user from the server
