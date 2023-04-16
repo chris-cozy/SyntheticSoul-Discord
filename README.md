@@ -5,6 +5,9 @@ This is a discord bot created using the discord.js library, as well as other cap
 ## Features
 ### Conversation
 This bot has integrated gpt-3.5 turbo capabilities, and can be conversed with by the user prefixing their message with a bot mention. The bot will retain the conversation context with that specific user, to a certain degree.
+### Administrative Commands
+- /autorole-configure - Set up the auto role for users to gain when joining the server
+- /autorole-disable - Disable the auto role for the server
 ### Miscellaneous Commands
 - /info - Displays general information about the bot.
 - /ping - Sends the bot's websocket and client pings.
