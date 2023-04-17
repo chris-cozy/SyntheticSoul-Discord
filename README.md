@@ -5,9 +5,13 @@ This is a discord bot created using the discord.js library, as well as other cap
 ## Features
 ### Conversation
 This bot has integrated gpt-3.5 turbo capabilities, and can be conversed with by the user prefixing their message with a bot mention. The bot will retain the conversation context with that specific user, to a certain degree.
+Due to the API cost, the user needs to have credits to chat with the bot. These credits can be collected for free each day with the '/daily' command. Each chat subtracts an amount of credits from the user's balance, currenty 25.
 ### Administrative Commands
 - /autorole-configure - Set up the auto role for users to gain when joining the server
 - /autorole-disable - Disable the auto role for the server
+- /role-add - Add a role to the server
+- /role-edit - Edit a server role
+- /role-delete - Delete a role from the server
 ### Miscellaneous Commands
 - /info - Displays general information about the bot.
 - /ping - Sends the bot's websocket and client pings.
@@ -18,7 +22,7 @@ This bot has integrated gpt-3.5 turbo capabilities, and can be conversed with by
 - /roles - Sends role buttons, allowing a user to change their role.
 ### Economic Commands
 - /level - Sends a rank card which displays the specified user's level, xp, and rank in the server.
-- /daily - Collects the user's daily allowance.
+- /daily - Collects the user's daily allowance. If user does not have balance account yet, sets it up.
 - /balance - Checks the specified user's balance
 ## Prerequisites
 Node.js

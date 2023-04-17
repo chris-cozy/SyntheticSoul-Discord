@@ -1,5 +1,7 @@
 const { Configuration, OpenAIApi } = require('openai');
 const { Client, Message } = require('discord.js');
+const userBalance = require('../../schemas/balance');
+const chatCost = 25;
 
 /**
  * @brief Handle a message sent in the server, using the openai gpt-3.5 API
@@ -7,6 +9,7 @@ const { Client, Message } = require('discord.js');
  * @param {Message} message - The message which was sent
  */
 module.exports = async (client, message) => {
+
     // Setup openai connection
     const configuration = new Configuration({
         apiKey: process.env.OPENAI_API_KEY
@@ -30,6 +33,29 @@ module.exports = async (client, message) => {
     if (!message.mentions.has(client.user.id)) {
         return;
     }
+
+    // Update user balance
+    let query = {
+        userId: message.author.id,
+        guildId: message.guild.id,
+    };
+
+    let user = await userBalance.findOne(query);
+
+    // If user exists, check balance. If they have enough credits, continue.
+    if (user) {
+        if (user.balance > chatCost) {
+            user.balance -= chatCost;
+            await user.save();
+        } else {
+            message.reply("you don't have enough credits to chat, collect your dailys to gain more..");
+            return;
+        }
+    } else {
+        message.reply("you don't currently have a balance yet to chat. run '/daily' to set one up..");
+        return;
+    }
+
 
     let conversationLog = []
 

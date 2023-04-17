@@ -44,7 +44,7 @@ module.exports = {
             if (!fetchedUser) {
                 // Check if mentioned user exists, and alter message accordingly
                 interaction.editReply(
-                    mentionedUserId ? `**${targetUserObject.user.tag}** doesn't have a balance..` : "**you** don't have a balance yet.."
+                    mentionedUserId ? `**${targetUserObject.user.tag}** doesn't have a balance..` : "**you** don't have a balance yet.. run '/daily' to set one up"
                 );
                 return;
             }
