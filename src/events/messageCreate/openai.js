@@ -62,13 +62,13 @@ module.exports = async (client, message) => {
     // Give the language model instructions
     conversationLog.push({
         role: 'system',
-        content: 'Your name is Jas, and you are a young woman. Talk like you are a young woman.'
+        content: `Your name is Jasmine but you like to be referred to as Jas, and you are a young woman with a cute personality. Talk like you are a young woman with a cute personality. My name is ${message.author.username}.`
     });
 
     // Give the language model instructions
     conversationLog.push({
         role: 'user',
-        content: 'Your name is Jas, and you are a young woman. Talk like you are a young woman.'
+        content: `Your name is Jasmine but you like to be referred to as Jas, and you are a young woman with a cute personality. Talk like you are a young woman with a cute personality. My name is ${message.author.username}.`
     });
 
     // Send the bot typing status
