@@ -1,6 +1,6 @@
 /**
  * @author Cozy
- * @version 2.5.1
+ * @version 2.5.2
  * @link https://discord.js.org/#/
  * @link https://mongoosejs.com/docs/
  * @link https://canvacord.js.org/docs/
