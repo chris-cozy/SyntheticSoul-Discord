@@ -44,12 +44,14 @@ module.exports = async (client, message) => {
 
     // If user exists, check balance. If they have enough credits, continue.
     if (user) {
-        if (user.balance > chatCost) {
-            user.balance -= chatCost;
-            await user.save();
-        } else {
-            message.reply("you don't have enough credits to chat, collect your dailys to gain more..");
-            return;
+        if (user.userId != process.env.DEVELOPER_ID) {
+            if (user.balance > chatCost) {
+                user.balance -= chatCost;
+                await user.save();
+            } else {
+                message.reply("you don't have enough credits to chat, collect your dailys to gain more..");
+                return;
+            }
         }
     } else {
         message.reply("you don't currently have a balance yet to chat. run '/daily' to set one up..");
@@ -144,4 +146,5 @@ module.exports = async (client, message) => {
     })
 
     message.reply(result.data.choices[0].message);
+    console.log(conversationLog);
 };
