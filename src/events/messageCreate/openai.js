@@ -71,39 +71,29 @@ module.exports = async (client, discordQuery) => {
     prevMessages.reverse();
 
     // Loop through prev msgs to find conversation context between the msg sender and the bot
-    prevMessages.forEach(async (msg, index) => {
+    await Promise.all(prevMessages.map(async (msg) => {
         // Pattern for removing mentions - currently unused
         let mention = /<@(.*?)>/;
 
         // Ensure that the messages being added are from the original message sender, or the bot
-        if ((msg.author.id !== discordQuery.author.id) && (msg.author.id !== client.user.id)) {
+        if (msg.author.id !== discordQuery.author.id && msg.author.id !== client.user.id) {
             return;
         }
 
         // Check if bot was mentioned, or if msg was from the bot
-        if ((msg.mentions.has(client.user.id)) || (msg.author.id == client.user.id)) {
-
+        if (msg.mentions.has(client.user.id) || msg.author.id === client.user.id) {
             // Add messages to conversation log, with appropriate role
-            if (msg.author.id == discordQuery.author.id) {
+            if (msg.author.id === discordQuery.author.id) {
                 conversationLog.push({
                     role: 'user',
                     content: msg.content,
+                    timestamp: msg.createdTimestamp,
                 });
-            } else if (msg.author.id == client.user.id) {
-
-                /*
-                conversationLog.push({
-                    role: 'assistant',
-                    content: msg.content,
-                });
-                */
-
-                /*
-                * If message is from bot, grab the message that it's a reply to, and check if the
-                * author of that message is the same author of the original message sender
-                * This makes sure that the bot is not adding their replies to other users
-                * to the conversation log with this user
-                */
+            } else if (msg.author.id === client.user.id) {
+                // If message is from bot, grab the message that it's a reply to, and check if the
+                // author of that message is the same author of the original message sender
+                // This makes sure that the bot is not adding their replies to other users
+                // to the conversation log with this user
 
                 // Check if message is a reply
                 if (msg.reference) {
@@ -113,25 +103,29 @@ module.exports = async (client, discordQuery) => {
                     // Check if the original message ID exists and is in the cache
                     if (originalMessage) {
                         // The current message is a reply to the original message
-                        if (originalMessage.author.id == discordQuery.author.id) {
+                        if (originalMessage.author.id === discordQuery.author.id) {
                             conversationLog.push({
                                 role: 'assistant',
                                 content: msg.content,
+                                timestamp: msg.createdTimestamp,
                             });
                         }
                     }
                 }
             }
-        } else {
-            return;
         }
-    });
+    }));
+
+    conversationLog.sort((a, b) => a.timestamp - b.timestamp);
+
+    // Create a new array without the timestamp property
+    const conversationLogWithoutTimestamp = conversationLog.map(({ role, content }) => ({ role, content }));
 
     const result = await openai.createChatCompletion({
         model: 'gpt-3.5-turbo',
-        messages: conversationLog,
+        messages: conversationLogWithoutTimestamp,
     })
 
     discordQuery.reply(result.data.choices[0].message);
-    console.log(conversationLog);
+    console.log(conversationLogWithoutTimestamp);
 };
