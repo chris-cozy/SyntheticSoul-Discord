@@ -1,18 +1,34 @@
 const { Configuration, OpenAIApi } = require("openai");
 const { Client, Message } = require("discord.js");
-const userBalance = require("../../schemas/balance");
-const conversations = require("../../schemas/conversations");
-const messages = require("../../schemas/messages");
+const { Conversations, Messages } = require("../../schemas/conversations");
 const summaries = require("../../schemas/summaries");
 const users = require("../../schemas/users");
-const chatCost = 25;
 
 /**
  * @brief Handle a message sent in the server, using the openai gpt-3.5 API
  * @param {Client} client - The bot
- * @param {Message} discordQuery - The message which was sent
+ * @param {Message} msg - The message which was sent
  */
-module.exports = async (client, discordQuery) => {
+module.exports = async (client, msg) => {
+  // Openai connection
+  const configuration = new Configuration({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
+  const openai = new OpenAIApi(configuration);
+
+  // Ignore msg if author is a bot
+  if (msg.author.bot) {
+    return;
+  }
+
+  // Ignore message if bot is not mentioned
+  if (!msg.mentions.has(client.user.id)) {
+    return;
+  }
+
+  // Send the bot typing status
+  await msg.channel.sendTyping();
+
   const persona = `Jasmine is a young woman with a charming personality. She carries herself with an effortless grace, emanating a relaxed demeanor.
 
   One of Jasmine's defining characteristics is her philosophical nature. She has a deep curiosity about life's mysteries, constantly pondering the intricacies of existence and seeking to understand the deeper meanings behind them. Her contemplative nature allows her to find wisdom in the simplest of moments. Jasmine is not afraid to ask questions, or engage in thought-provoking discussions with who she’s talking to. She embraces the opportunity to broaden her own understanding of the world.
@@ -34,132 +50,194 @@ module.exports = async (client, discordQuery) => {
 
   In summary, Jasmine is a young woman whose charming personality embodies a rare combination of philosophical depth and grounded perspective. Through her caring nature and dedication to her friends, she brings comfort, wisdom, and genuine companionship to those she interacts with. Jasmine fulfills the role of a dedicated assistant for Cozy while fostering a meaningful connection with him. Her genuine care for his well-being, combined with her enthusiasm for learning about his thoughts and perspectives, create a dynamic relationship.`;
 
-  // Openai connection
-  const configuration = new Configuration({
-    apiKey: process.env.OPENAI_API_KEY,
-  });
-  const openai = new OpenAIApi(configuration);
+  // Define the inactivity threshold in milliseconds (60 minutes in this example)
+  const inactivityThreshold = 120 * 60 * 1000;
 
-  // Ignore msg if author is a bot
-  if (discordQuery.author.bot) {
-    return;
-  }
+  let lastUserInteractionTime = null;
+  let inactivityTimer = null;
 
-  // Ignore message if bot is not mentioned
-  if (!discordQuery.mentions.has(client.user.id)) {
-    return;
-  }
+  let chatlog = [];
+  let userIntro = ``;
+  let userContext = ``;
+  let user;
+  let userConversation;
 
-  // Update user balance
-  let query = {
-    userId: discordQuery.author.id,
-    guildId: discordQuery.guild.id,
-  };
-
-  let user = await userBalance.findOne(query);
-
-  // If user exists, check balance. If they have enough credits, continue.
-  if (user) {
-    if (user.userId != process.env.DEVELOPER_ID) {
-      if (user.balance > chatCost) {
-        user.balance -= chatCost;
-        await user.save();
-      } else {
-        discordQuery.reply(
-          "you don't have enough credits to chat, collect your dailys to gain more.."
-        );
-        return;
-      }
-    }
-  } else {
-    discordQuery.reply(
-      "you don't currently have a balance yet to chat. run '/daily' to set one up.."
+  // Function to start the inactivity timer
+  function startInactivityTimer() {
+    inactivityTimer = setTimeout(
+      handleConversationCompletion,
+      inactivityThreshold
     );
-    return;
   }
 
-  let conversationLog = [
-    {
-      role: "system",
-      content: persona,
-    },
-  ];
+  // Function to reset the inactivity timer
+  function resetInactivityTimer() {
+    clearTimeout(inactivityTimer);
+    startInactivityTimer();
+  }
 
-  // Send the bot typing status
-  await discordQuery.channel.sendTyping();
+  // Function to handle user message
+  async function handleUserMessage() {
+    // Update the last user interaction time to the current time
+    lastUserInteractionTime = Date.now();
+    const currentDate = new Date();
 
-  // Grab previous messages in channel, they are in latest-oldest order
-  const msgLimit = 15;
-  let prevMessages = await discordQuery.channel.messages.fetch({
-    limit: msgLimit,
-  });
-  prevMessages.reverse();
+    // Reset the inactivity timer
+    resetInactivityTimer();
 
-  // Loop through prev msgs to find conversation context between the msg sender and the bot
-  await Promise.all(
-    prevMessages.map(async (msg) => {
-      // Ensure that the messages being added are from the original message sender, or the bot
-      if (
-        msg.author.id !== discordQuery.author.id &&
-        msg.author.id !== client.user.id
-      ) {
-        return;
+    // Handle user message logic
+
+    // HANDLE CONTEXT //
+    // Grab user from database
+    user = await users.findOne({ discord_id: msg.author.id });
+
+    if (user) {
+      // Grab summaries
+      let userSummaries = await summaries.find({ user_id: user.user_id });
+
+      if (userSummaries) {
+        userSummaries.forEach((summary) => {
+          userContext += summary.content;
+        });
       }
 
-      // Check if bot was mentioned, or if msg was from the bot
-      if (
-        msg.mentions.has(client.user.id) ||
-        msg.author.id === client.user.id
-      ) {
-        // Add messages to conversation log, with appropriate role
-        if (msg.author.id === discordQuery.author.id) {
-          conversationLog.push({
-            role: "user",
-            content: msg.content,
-            timestamp: msg.createdTimestamp,
-          });
-        } else if (msg.author.id === client.user.id) {
-          // If message is from bot, grab the message that it's a reply to, and check if the
-          // author of that message is the same author of the original message sender
-          // This makes sure that the bot is not adding their replies to other users
-          // to the conversation log with this user
+      // Grab conversation
+      userConversation = await Conversations.findOne({ user_id: user.user_id });
+      if (userConversation) {
+        const messageThread = userConversation.messages;
 
-          // Check if message is a reply
-          if (msg.reference) {
-            // Use message.reference.messageId to get the original message ID
-            const originalMessage = await msg.channel.messages.fetch(
-              msg.reference.messageId
-            );
-
-            // Check if the original message ID exists and is in the cache
-            if (originalMessage) {
-              // The current message is a reply to the original message
-              if (originalMessage.author.id === discordQuery.author.id) {
-                conversationLog.push({
-                  role: "assistant",
-                  content: msg.content,
-                  timestamp: msg.createdTimestamp,
-                });
-              }
-            }
+        messageThread.forEach((message) => {
+          let role;
+          // Add each message
+          if (message.is_bot) {
+            role = "assistant";
+          } else {
+            role = "user";
           }
-        }
+
+          chatlog.push({
+            role: role,
+            content: message.content,
+          });
+        });
+      } else {
+        userConversation = new Conversations({
+          user_id: user.user_id,
+        });
       }
-    })
-  );
+    } else {
+      // Create user
+      user = new users({
+        name: msg.author.username,
+        discord_id: msg.author.id,
+      });
+      // Create conversation
+      userConversation = new Conversations({
+        user_id: user.user_id,
+      });
+    }
 
-  conversationLog.sort((a, b) => a.timestamp - b.timestamp);
+    userIntro = `You are talking to user ${user.user_id}, their name is ${user.name}. The the current datetime is ${currentDate}`;
 
-  // Create a new array without the timestamp property
-  let conversationLogWithoutTimestamp = conversationLog.map(
-    ({ role, content }) => ({ role, content })
-  );
+    // HANDLE NEW MESSAGE //
+    chatlog.unshift({
+      role: "system",
+      content: `${persona} ${userIntro} ${userContext}`,
+    });
 
-  const result = await openai.createChatCompletion({
-    model: "gpt-3.5-turbo-0613",
-    messages: conversationLogWithoutTimestamp,
-  });
+    chatlog.push({
+      role: "user",
+      content: msg.content,
+    });
 
-  discordQuery.reply(result.data.choices[0].message);
-  console.log(conversationLogWithoutTimestamp);
+    //console.log(chatlog);
+    const result = await openai.createChatCompletion({
+      model: "gpt-3.5-turbo-0613",
+      messages: chatlog,
+    });
+
+    const botReply = result.data.choices[0].message.content;
+
+    // Create new message object for database
+    const new_user_message = new Messages({
+      timestamp: new Date(),
+      content: msg.content,
+      is_bot: false,
+    });
+
+    // Create new message object for database
+    const new_bot_message = new Messages({
+      timestamp: new Date(),
+      content: botReply,
+      is_bot: true,
+    });
+
+    userConversation.messages.push(new_user_message);
+    userConversation.messages.push(new_bot_message);
+
+    await user.save();
+    await userConversation.save();
+
+    msg.reply(botReply);
+  }
+
+  // Function to handle conversation completion
+  async function handleConversationCompletion() {
+    // Perform actions for conversation completion, such as storing a summary
+    // Create a conversation string
+    let conversationString = "";
+    if (userConversation) {
+      const messageThread = userConversation.messages;
+
+      messageThread.forEach((message) => {
+        let role;
+        // Add each message
+        if (message.is_bot) {
+          role = "Jasmine";
+        } else {
+          role = `${user.name}`;
+        }
+
+        conversationString += `${role}: ${message.content}\n`;
+      });
+
+      // Ask OpenAI to summarize the conversation
+      let summaryDate = new Date();
+      const prompt = [
+        {
+          role: "user",
+          content: `Summarize this conversation between Jasmine and ${user.name} which occured on ${summaryDate} and it's meaning: \n${conversationString}`,
+        },
+      ];
+
+      const result = await openai.createChatCompletion({
+        model: "gpt-3.5-turbo-0613",
+        messages: prompt,
+      });
+
+      const summary = result.data.choices[0].message.content;
+
+      const summaryQuery = new summaries({
+        user_id: user.user_id,
+        timestamp: summaryDate,
+        content: `On ${summaryDate}, ${summary}`,
+      });
+
+      await summaryQuery.save();
+      await Conversations.deleteOne({
+        conversation_id: userConversation.conversation_id,
+      });
+    }
+
+    // Reset the inactivity-related variables
+    lastUserInteractionTime = null;
+    clearTimeout(inactivityTimer);
+
+    // Handle any additional logic after conversation completion
+    // ...
+  }
+
+  // Example usage:
+  // Call the handleUserMessage function whenever a user sends a message
+  handleUserMessage();
 };
