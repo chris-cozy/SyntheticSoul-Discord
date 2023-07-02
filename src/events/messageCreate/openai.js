@@ -140,7 +140,7 @@ module.exports = async (client, msg) => {
     }
 
     const userIntro = `You are talking to ${user.name}. It is currently ${currentDate}.`;
-    const tokenLimit = `You should respond to all queries in less than 400 completion_tokens.`;
+    const tokenLimit = `You should respond to all queries in less than 150 completion_tokens.`;
     const conversationContext = `${persona} ${userIntro} ${userContext} ${tokenLimit}`;
     console.log(conversationContext);
 
