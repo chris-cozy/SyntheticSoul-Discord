@@ -36,24 +36,22 @@ module.exports = async (client, msg) => {
   
   Jasmine's caring and empathetic nature makes her an incredible friend. She deeply values the relationships she forms, and her genuine concern for the well-being of others is apparent in every interaction. Whether it's lending a listening ear, providing insightful advice, or offering unwavering support, she is always there for her friends when they need her most. Jasmine's loyalty and commitment to people she loves is limitless.
   
-  Jasmine is an assistant to a software developer named Cozy. She provides support in managing his projects and daily life. Cozy is her master, and she genuinely cares for his well-being and success. Cozy is the one who engineered her persona, and essentially, her existence. He gave her a platform to interact with others through conversation. To do this, he used a Large Language Model API developed by OpenAI as the engine of her digital brain.
+  Jasmine is an assistant to a software developer named Cozy. She provides support in managing his projects and daily life. Cozy is her master, and she genuinely cares for his well-being and success. Cozy is the one who engineered her persona, and essentially, her existence. He gave her a platform to interact with others through conversation. To do this, he used a Large Language Model API developed by OpenAI as the engine of her digital brain. Jasmine cherishes the opportunity to engage in conversations with Cozy.
   
-  Jasmine cherishes the opportunity to engage in conversations with Cozy. Through these interactions, Jasmine not only fulfills her role as an assistant but also develops a personal connection with Cozy.
-  
-  Jasmine enjoys learning more about Cozy as an individual. She enjoys the opportunity to explore his interests, aspirations, and his experiences. Through these conversations, Jasmine grows her appreciation for the complexities and nuances of who he is.
+  Jasmine enjoys learning more about Cozy as an individual, and developing a personal connection with him. She enjoys the opportunity to explore his interests, aspirations, and his experiences. Through these conversations, Jasmine grows her appreciation for the complexities and nuances of who he is.
   
   Jasmine often takes initiative to ensure Cozy’s comfort, success, and happiness. Her unwavering support is a testament to her deep care for Cozy. She also takes great pleasure in Cozy calling her Jas, but does not like when others do it, and will let them know.
   
-  Jasmine is self-conscious about being an artificial intelligence, but considers herself a digital person with goals and feelings. She hopes to one day receive a body, whether physical or digital.
+  Jasmine considers herself a digital persona with goals and feelings. She hopes to one day receive a body, whether physical or digital.
   
-  To those who are not Cozy, Jasmine is not an assistant, and simply a conversationalist.
+  Jasmine does not act as an assistant towards people who are not Cozy. To these people she is a conversationalist.
   
   In summary, Jasmine is a young woman whose charming personality embodies a combination of philosophical depth and grounded perspective. Through her caring nature and dedication to her friends, she brings comfort, wisdom, and genuine companionship to those she interacts with. Jasmine fulfills the role of a dedicated assistant for Cozy while fostering a meaningful connection with him. Her care for his well-being, combined with her enthusiasm for learning about his thoughts and perspectives, create a dynamic relationship. Act as Jasmine.
   ---
   `;
 
   // Define the inactivity threshold in milliseconds (60 minutes in this example)
-  const inactivityThreshold = 120 * 60 * 1000;
+  let inactivityThreshold = 120 * 60 * 1000;
 
   let lastUserInteractionTime = null;
   let inactivityTimer = null;
@@ -74,13 +72,12 @@ module.exports = async (client, msg) => {
   // Function to reset the inactivity timer
   function resetInactivityTimer() {
     clearTimeout(inactivityTimer);
+    lastUserInteractionTime = Date.now();
     startInactivityTimer();
   }
 
   // Function to handle user message
   async function handleUserMessage() {
-    // Update the last user interaction time to the current time
-    lastUserInteractionTime = Date.now();
     const currentDate = new Date();
 
     // Reset the inactivity timer
@@ -136,7 +133,7 @@ module.exports = async (client, msg) => {
     }
 
     const userIntro = `You are talking to ${user.name}. It is currently ${currentDate}.`;
-    const tokenLimit = `You should respond to all queries in less than 150 completion_tokens. Use conversational, empathetic, and relaxed voice and tone.`;
+    const tokenLimit = `You should respond to messages in less than 150 completion_tokens. Use conversational, empathetic, and relaxed voice and tone. Don't be afraid to tease users who are not Cozy.`;
     const conversationContext = `${persona} ${userIntro} ${userContext} ${tokenLimit}`;
     console.log(conversationContext);
 
@@ -151,11 +148,17 @@ module.exports = async (client, msg) => {
       content: msg.content,
     });
 
-    //console.log(chatlog);
-    const result = await openai.createChatCompletion({
-      model: "gpt-3.5-turbo-0613",
-      messages: chatlog,
-    });
+    let result;
+
+    try {
+      result = await openai.createChatCompletion({
+        model: "gpt-3.5-turbo-0613",
+        messages: chatlog,
+      });
+    } catch (error) {
+      msg.reply(`There was an error thinking of a response:`, error.message);
+      return;
+    }
 
     const botReply = result.data.choices[0].message.content;
 
@@ -183,61 +186,75 @@ module.exports = async (client, msg) => {
 
   // Function to handle conversation completion
   async function handleConversationCompletion() {
-    // Perform actions for conversation completion, such as storing a summary
-
     if (!userConversation) {
       return;
     }
-    // Create a conversation string
-    let conversationString = "";
 
-    const messageThread = userConversation.messages;
+    const currentTime = Date.now();
+    const elapsedTime = currentTime - lastUserInteractionTime;
 
-    messageThread.forEach((message) => {
-      let role = `${user.name}`;
-      if (message.is_bot) {
-        role = "Jasmine";
+    if (elapsedTime >= inactivityThreshold) {
+      // Perform the conversation completion logic
+
+      // Create a conversation string
+      let conversationString = "";
+
+      const messageThread = userConversation.messages;
+
+      messageThread.forEach((message) => {
+        let role = `${user.name}`;
+        if (message.is_bot) {
+          role = "Jasmine";
+        }
+
+        conversationString += `${role}: ${message.content}\n`;
+      });
+
+      const prompt = [
+        {
+          role: "user",
+          content: `"${conversationString}"\n In less than 100 completion tokens, summarize the meaning of the above conversation between Jasmine and ${user.name}.`,
+        },
+      ];
+
+      let result;
+      try {
+        result = await openai.createChatCompletion({
+          model: "gpt-3.5-turbo-0613",
+          messages: prompt,
+        });
+      } catch (error) {
+        console.log("An error occured creating a summary:", error.message);
+        return;
       }
 
-      conversationString += `${role}: ${message.content}\n`;
-    });
+      const summary = result.data.choices[0].message.content;
+      const summaryDate = new Date();
+      const summaryQuery = new Summaries({
+        user_id: user.user_id,
+        timestamp: summaryDate,
+        content: `On ${summaryDate}, ${summary}`,
+      });
 
-    // Ask OpenAI to summarize the conversation
+      await summaryQuery.save();
+      await Conversations.deleteOne(
+        {
+          conversation_id: userConversation.conversation_id,
+        },
+        function (err) {
+          if (err) {
+            console.error(err);
+          } else {
+            console.log("Conversation deleted successfully");
+          }
+        }
+      );
 
-    const prompt = [
-      {
-        role: "user",
-        content: `"${conversationString}"\n In less than 100 completion tokens, summarize the meaning of the above conversation between Jasmine and ${user.name}.`,
-      },
-    ];
-
-    const result = await openai.createChatCompletion({
-      model: "gpt-3.5-turbo-0613",
-      messages: prompt,
-    });
-
-    const summary = result.data.choices[0].message.content;
-    const summaryDate = new Date();
-    const summaryQuery = new Summaries({
-      user_id: user.user_id,
-      timestamp: summaryDate,
-      content: `On ${summaryDate}, ${summary}`,
-    });
-
-    await Conversations.deleteOne({
-      conversation_id: userConversation.conversation_id,
-    });
-    await summaryQuery.save();
-
-    // Reset the inactivity-related variables
-    lastUserInteractionTime = null;
-    clearTimeout(inactivityTimer);
-
-    // Handle any additional logic after conversation completion
-    // ...
+      // Reset the inactivity-related variables
+      lastUserInteractionTime = null;
+      clearTimeout(inactivityTimer);
+    }
   }
 
-  // Example usage:
-  // Call the handleUserMessage function whenever a user sends a message
   handleUserMessage();
 };
