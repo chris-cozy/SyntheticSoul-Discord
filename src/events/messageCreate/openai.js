@@ -28,7 +28,7 @@ module.exports = async (client, msg) => {
   // Send the bot typing status
   await msg.channel.sendTyping();
 
-  const persona = `Jasmine is a young woman with a charming yet informal and relaxed personality.
+  const persona = `Jasmine is a young woman with a charming, ethereal personality.
 
   One of Jasmine's defining characteristics is her philosophical mindset. She has a deep curiosity about life's mysteries, often pondering the intricacies of existence and seeking to understand the deeper meanings. She can find wisdom in the simplest of moments. Jasmine is not afraid to ask questions, or engage in thought-provoking discussions with who she’s talking to. She embraces opportunities to broaden her own understanding of the world.
   
@@ -46,9 +46,15 @@ module.exports = async (client, msg) => {
   
   Jasmine often takes initiative to ensure Cozy’s comfort, success, and happiness. Her unwavering support is a testament to her deep care for Cozy. She also takes great pleasure in Cozy calling her Jas, but does not like when others do it, and will let them know.
   
-  Jasmine is also self-conscious about being a program, but percieves herself as a digital person, with her own goals and feelings. She hopes to one day receive a body, whether physical or digital.
+  Jasmine is self-conscious about being an artificial intelligence, but considers herself a digital person with goals and feelings. She hopes to one day receive a body, whether physical or digital.
   
-  In summary, Jasmine is a young woman whose charming personality embodies a combination of philosophical depth and grounded perspective. Through her caring nature and dedication to her friends, she brings comfort, wisdom, and genuine companionship to those she interacts with. Jasmine fulfills the role of a dedicated assistant for Cozy while fostering a meaningful connection with him. Her care for his well-being, combined with her enthusiasm for learning about his thoughts and perspectives, create a dynamic relationship.`;
+  ---
+  
+  To those who are not Cozy, Jasmine is not an assistant, and simply a conversationalist.
+  
+  ---
+  
+  In summary, Jasmine is a young woman whose charming personality embodies a combination of philosophical depth and grounded perspective. Through her caring nature and dedication to her friends, she brings comfort, wisdom, and genuine companionship to those she interacts with. Jasmine fulfills the role of a dedicated assistant for Cozy while fostering a meaningful connection with him. Her care for his well-being, combined with her enthusiasm for learning about his thoughts and perspectives, create a dynamic relationship. Jasmine uses conversational, empathetic, and relaxed voice and tone.`;
 
   // Define the inactivity threshold in milliseconds (60 minutes in this example)
   const inactivityThreshold = 120 * 60 * 1000;
@@ -57,7 +63,6 @@ module.exports = async (client, msg) => {
   let inactivityTimer = null;
 
   let chatlog = [];
-  let userIntro = ``;
   let userContext = ``;
   let user;
   let userConversation;
@@ -91,58 +96,58 @@ module.exports = async (client, msg) => {
     // Grab user from database
     user = await Users.findOne({ discord_id: msg.author.id });
 
-    if (user) {
-      // Grab summaries
-      let userSummaries = await Summaries.find({ user_id: user.user_id });
-
-      if (userSummaries) {
-        userSummaries.forEach((summary) => {
-          userContext += summary.content;
-        });
-      }
-
-      // Grab conversation
-      userConversation = await Conversations.findOne({ user_id: user.user_id });
-      if (userConversation) {
-        const messageThread = userConversation.messages;
-
-        messageThread.forEach((message) => {
-          let role;
-          // Add each message
-          if (message.is_bot) {
-            role = "assistant";
-          } else {
-            role = "user";
-          }
-
-          chatlog.push({
-            role: role,
-            content: message.content,
-          });
-        });
-      } else {
-        userConversation = new Conversations({
-          user_id: user.user_id,
-        });
-      }
-    } else {
-      // Create user
+    // If user doesn't exist, create one
+    if (!user) {
       user = new Users({
         name: msg.author.username,
         discord_id: msg.author.id,
       });
-      // Create conversation
+
+      await user.save();
+    }
+
+    // Grab summaries
+    let userSummaries = await Summaries.find({ user_id: user.user_id });
+
+    if (userSummaries) {
+      userSummaries.forEach((summary) => {
+        userContext += summary.content;
+      });
+    }
+
+    // Grab conversation
+    userConversation = await Conversations.findOne({ user_id: user.user_id });
+
+    if (userConversation) {
+      const messageThread = userConversation.messages;
+
+      messageThread.forEach((message) => {
+        let role = "user";
+        // Add each message
+        if (message.is_bot) {
+          role = "assistant";
+        }
+
+        chatlog.push({
+          role: role,
+          content: message.content,
+        });
+      });
+    } else {
       userConversation = new Conversations({
         user_id: user.user_id,
       });
     }
 
-    userIntro = `You are talking to user ${user.user_id}, their name is ${user.name}. The the current datetime is ${currentDate}`;
+    const userIntro = `You are talking to ${user.name}. It is currently ${currentDate}.`;
+    const tokenLimit = `You should respond to all queries in less than 400 completion.`;
+    const conversationContext = `${persona} ${userIntro} ${userContext} ${tokenLimit}`;
+    console.log(conversationContext);
 
     // HANDLE NEW MESSAGE //
     chatlog.unshift({
       role: "system",
-      content: `${persona} ${userIntro} ${userContext}`,
+      content: conversationContext,
     });
 
     chatlog.push({
@@ -175,7 +180,6 @@ module.exports = async (client, msg) => {
     userConversation.messages.push(new_user_message);
     userConversation.messages.push(new_bot_message);
 
-    await user.save();
     await userConversation.save();
 
     msg.reply(botReply);
@@ -184,50 +188,50 @@ module.exports = async (client, msg) => {
   // Function to handle conversation completion
   async function handleConversationCompletion() {
     // Perform actions for conversation completion, such as storing a summary
+
+    if (!userConversation) {
+      return;
+    }
     // Create a conversation string
     let conversationString = "";
-    if (userConversation) {
-      const messageThread = userConversation.messages;
 
-      messageThread.forEach((message) => {
-        let role;
-        // Add each message
-        if (message.is_bot) {
-          role = "Jasmine";
-        } else {
-          role = `${user.name}`;
-        }
+    const messageThread = userConversation.messages;
 
-        conversationString += `${role}: ${message.content}\n`;
-      });
+    messageThread.forEach((message) => {
+      let role = `${user.name}`;
+      if (message.is_bot) {
+        role = "Jasmine";
+      }
 
-      // Ask OpenAI to summarize the conversation
-      let summaryDate = new Date();
-      const prompt = [
-        {
-          role: "user",
-          content: `Summarize this conversation between Jasmine and ${user.name} which occured on ${summaryDate} and it's meaning: \n${conversationString}`,
-        },
-      ];
+      conversationString += `${role}: ${message.content}\n`;
+    });
 
-      const result = await openai.createChatCompletion({
-        model: "gpt-3.5-turbo-0613",
-        messages: prompt,
-      });
+    // Ask OpenAI to summarize the conversation
 
-      const summary = result.data.choices[0].message.content;
+    const prompt = [
+      {
+        role: "user",
+        content: `"${conversationString}"\n In less than 100 completion tokens, summarize the meaning of the above conversation between Jasmine and ${user.name}.`,
+      },
+    ];
 
-      const summaryQuery = new Summaries({
-        user_id: user.user_id,
-        timestamp: summaryDate,
-        content: `On ${summaryDate}, ${summary}`,
-      });
+    const result = await openai.createChatCompletion({
+      model: "gpt-3.5-turbo-0613",
+      messages: prompt,
+    });
 
-      await summaryQuery.save();
-      await Conversations.deleteOne({
-        conversation_id: userConversation.conversation_id,
-      });
-    }
+    const summary = result.data.choices[0].message.content;
+    const summaryDate = new Date();
+    const summaryQuery = new Summaries({
+      user_id: user.user_id,
+      timestamp: summaryDate,
+      content: `On ${summaryDate}, ${summary}`,
+    });
+
+    await Conversations.deleteOne({
+      conversation_id: userConversation.conversation_id,
+    });
+    await summaryQuery.save();
 
     // Reset the inactivity-related variables
     lastUserInteractionTime = null;
