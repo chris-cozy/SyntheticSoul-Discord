@@ -156,7 +156,7 @@ module.exports = async (client, msg) => {
         messages: chatlog,
       });
     } catch (error) {
-      msg.reply(`There was an error thinking of a response:`, error.message);
+      msg.reply(`I had a error while thinking of a response: ${error.message}`);
       return;
     }
 
