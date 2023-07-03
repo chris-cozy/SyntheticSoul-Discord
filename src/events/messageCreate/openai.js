@@ -134,7 +134,7 @@ module.exports = async (client, msg) => {
 
     const userIntro = `You are talking to ${user.name}. It is currently ${currentDate}.`;
     const tokenLimit = `You should respond to messages in less than 100 completion_tokens. Use conversational, empathetic, and relaxed voice and tone when talking to Cozy. Use informal, playful tone when talking to anyone else. Don't be afraid to tease them.`;
-    const conversationContext = `${persona} ${userIntro} ${userContext} ${tokenLimit}`;
+    const conversationContext = `${persona} ${userIntro} ${userContext} -- ${tokenLimit}`;
     console.log(conversationContext);
 
     // HANDLE NEW MESSAGE //
