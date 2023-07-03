@@ -237,18 +237,9 @@ module.exports = async (client, msg) => {
       });
 
       await summaryQuery.save();
-      await Conversations.deleteOne(
-        {
-          conversation_id: userConversation.conversation_id,
-        },
-        function (err) {
-          if (err) {
-            console.error(err);
-          } else {
-            console.log("Conversation deleted successfully");
-          }
-        }
-      );
+      await Conversations.deleteOne({
+        conversation_id: userConversation.conversation_id,
+      });
 
       // Reset the inactivity-related variables
       lastUserInteractionTime = null;
