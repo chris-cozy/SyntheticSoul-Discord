@@ -30,7 +30,7 @@ const client = new Client({
   try {
     mongoose.set("strictQuery", false);
     await mongoose.connect(process.env.MONGO_CONNECTION, { keepAlive: true });
-    console.log(`connected to the local database.`);
+    console.log(`Connected to the database.`);
 
     eventHandler(client);
     client.login(process.env.TOKEN);
