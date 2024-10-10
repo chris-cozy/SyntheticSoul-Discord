@@ -6,13 +6,21 @@ const messageSchema = new Schema({
     required: true,
     default: () => new Types.ObjectId(),
   },
+  message: {
+    type: String,
+    required: true,
+  },
+  purpose: {
+    type: String,
+    required: true,
+  },
+  tone: {
+    type: String,
+    required: true,
+  },
   timestamp: {
     type: Date,
     required: true,
-  },
-  content: {
-    type: String,
-    required: false,
   },
   is_bot: {
     type: Boolean,

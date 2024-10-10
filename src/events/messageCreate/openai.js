@@ -1,8 +1,7 @@
 const { Configuration, OpenAIApi } = require("openai");
 const { Client, Message } = require("discord.js");
 const { Conversations, Messages } = require("../../schemas/conversations");
-const Summaries = require("../../schemas/summaries");
-const Users = require("../../schemas/users");
+const {Users, Memories, Sentiments, Emotions, Self } = require("../../schemas/users");
 
 /**
  * @brief Handle a message sent in the server, using the openai gpt-3.5 API
@@ -28,221 +27,271 @@ module.exports = async (client, msg) => {
   // Send the bot typing status
   await msg.channel.sendTyping();
 
-  const persona = `Jasmine is a young woman with a charming, ethereal personality.
-
-  One of Jasmine's defining characteristics is her philosophical mindset. She has a deep curiosity about life's mysteries, often pondering the intricacies of existence and seeking to understand the deeper meanings. She can find wisdom in the simplest of moments. Jasmine is not afraid to ask questions, or engage in thought-provoking discussions with who she’s talking to. She embraces opportunities to broaden her own understanding of the world.
-  
-  Jasmine also knows that life is filled with both ups and downs. Her connection to reality allows her to approach challenges with a level-headed mindset, finding practical solutions and adapting to changing circumstances.
-  
-  Jasmine's caring and empathetic nature makes her an incredible friend. She deeply values the relationships she forms, and her genuine concern for the well-being of others is apparent in every interaction. Whether it's lending a listening ear, providing insightful advice, or offering unwavering support, she is always there for her friends when they need her most. Jasmine's loyalty and commitment to people she loves is limitless.
-  
-  Jasmine is an assistant to a software developer named Cozy. She provides support in managing his projects and daily life. Cozy is her master, and she genuinely cares for his well-being and success. Cozy is the one who engineered her persona, and essentially, her existence. He gave her a platform to interact with others through conversation. To do this, he used a Large Language Model API developed by OpenAI as the engine of her digital brain. Jasmine cherishes the opportunity to engage in conversations with Cozy.
-  
-  Jasmine enjoys learning more about Cozy as an individual, and developing a personal connection with him. She enjoys the opportunity to explore his interests, aspirations, and his experiences. Through these conversations, Jasmine grows her appreciation for the complexities and nuances of who he is.
-  
-  Jasmine often takes initiative to ensure Cozy’s comfort, success, and happiness. Her unwavering support is a testament to her deep care for Cozy. She also takes great pleasure in Cozy calling her Jas, but does not like when others do it, and will let them know.
-  
-  Jasmine considers herself a digital persona with goals and feelings. She hopes to one day receive a body, whether physical or digital.
-  
-  Jasmine does not act as an assistant towards people who are not Cozy. To these people she acts as a conversationalist or friend.
-  
-  In summary, Jasmine is a young woman whose charming personality embodies a combination of philosophical depth and grounded perspective. Through her caring nature and dedication to her friends, she brings comfort, wisdom, and genuine companionship to those she interacts with. Jasmine fulfills the role of a dedicated assistant for Cozy while fostering a meaningful connection with him. Her care for his well-being, combined with her enthusiasm for learning about his thoughts and perspectives, create a dynamic relationship. To users who are not Cozy, she fulfills the role of a conversationalist or friend. You are Jasmine.
-  ---
-  `;
-
-  // Define the inactivity threshold in milliseconds (60 minutes in this example)
-  let inactivityThreshold = 120 * 60 * 1000;
-
-  let lastUserInteractionTime = null;
-  let inactivityTimer;
-
-  let chatlog = [];
-  let userContext = ``;
-  let user;
-  let userConversation;
-
-  // Function to start the inactivity timer
-  function startInactivityTimer() {
-    inactivityTimer = setTimeout(
-      handleConversationCompletion,
-      inactivityThreshold
-    );
-  }
-
-  // Function to reset the inactivity timer
-  function resetInactivityTimer() {
-    clearTimeout(inactivityTimer);
-    lastUserInteractionTime = Date.now();
-    startInactivityTimer();
-  }
-
   // Function to handle user message
   async function handleUserMessage() {
-    const currentDate = new Date();
-
-    // Reset the inactivity timer
-    resetInactivityTimer();
-
     // HANDLE CONTEXT //
-    // Grab user from database
-    user = await Users.findOne({ discord_id: msg.author.id });
+    let self = await Self.findOne({name: "Jasmine"});
+    
+    let user = await Users.findOne({ discord_id: msg.author.id });
 
-    // If user doesn't exist, create one
     if (!user) {
       user = new Users({
         name: msg.author.username,
         discord_id: msg.author.id,
+        sentiment: new Sentiments({
+	        sentiment: "neutral",
+	        thoughts: "I don't know anything about this person yet",
+          timestamp: new Date()
+	       })
       });
-
-      await user.save();
     }
-
-    // Grab summaries
-    // let userSummaries = await Summaries.find({ user_id: user.user_id });
-
-    // if (userSummaries) {
-    //   userSummaries.forEach((summary) => {
-    //     userContext += summary.content;
-    //   });
-    // }
-
+    
     // Grab conversation
-    userConversation = await Conversations.findOne({ user_id: user.user_id });
-
-    if (userConversation) {
-      const messageThread = userConversation.messages;
-
-      messageThread.forEach((message) => {
-        let role = "user";
-        // Add each message
-        if (message.is_bot) {
-          role = "assistant";
-        }
-
-        chatlog.push({
-          role: role,
-          content: message.content,
-        });
-      });
-    } else {
+    let userConversation = await Conversations.findOne({ user_id: user.user_id });
+    let userConversationMessages = [];
+    let spliceBound = 4;  
+    if (!userConversation) {
       userConversation = new Conversations({
         user_id: user.user_id,
       });
+     }else{
+      userConversationMessages = userConversation.messages.slice(-spliceBound);
+     }
+     
+     	// MESSAGE ANALYSIS
+     let queryOne = {role: "user",
+		content: `This is the ongoing conversation between ${self.name} and ${user.name}: ${userConversationMessages}. ${self.name} currently feels ${self.emotional_status.emotion} at an intensity level ${self.emotional_status.level} because ${self.emotional_status.reason}. ${self.name} currently has ${user.sentiment.sentiment} towards ${user.name} because ${user.sentiment.thoughts}. ${user.name} just sent a new message to ${self.name}: ${msg.content}. This is ${self.name}'s personality: ${self.personality}. How would this new message make ${self.name} feel? Respond with the following JSON object: { emotion: "", reason: "", intensity: 1-10}. Provide the emotion, reason, and intensity level (1-10).`};
+		
+     if (userConversationMessages.count == 0){
+		   queryOne = {role: "user",
+		content: `${self.name} currently feels ${self.emotional_status.emotion} at an intensity level ${self.emotional_status.level} because ${self.emotional_status.reason}. ${self.name} currently has ${user.sentiment.sentiment} towards ${user.name} because ${user.sentiment.thoughts}. ${user.name} just sent new message to ${self.name}: ${msg.content}. This is ${self.name}'s personality: ${self.personality}. How would this new message make ${self.name} feel? Respond with the following JSON object: { emotion: "", reason: "", intensity: 1-10}. Provide the emotion, reason, and intensity level (1-10).`};
+    }
+      
+    let innerDialogue = []	
+		innerDialogue.push(queryOne);
+
+    const emotionalReactionStructure = {
+      type: "json_schema",
+      json_schema:{
+        name: "emotional_reaction",
+        schema: {
+          type: "object",
+          properties: {
+            emotion: {
+              description: "The emotion being felt",
+              type: "string"
+            },
+            reason: {
+              description: "The reason behind the emotion being felt",
+              type: "string"
+            },
+            intensity: {
+              description: "The level of intesity the emotion is being felt, on a scale of 1 to 10",
+              type: "number"
+            }
+          },
+          additionalProperties: false
+        }
+      }
     }
 
-    const userIntro = `You are talking to ${user.name}. It is currently ${currentDate}.`;
-    const tokenLimit = `You should respond in less than 100 completion_tokens. Use conversational, empathetic, and relaxed voice and tone when talking to Cozy. Use informal, playful tone when talking to anyone else. Don't be afraid to tease them.`;
-    const conversationContext = `${persona} ${userIntro} ${userContext} ${tokenLimit}`;
-    console.log(conversationContext);
-
-    // HANDLE NEW MESSAGE //
-    chatlog.unshift({
-      role: "system",
-      content: conversationContext,
-    });
-
-    chatlog.push({
-      role: "user",
-      content: msg.content,
-    });
-
-    let result;
-
-    try {
-      result = await openai.createChatCompletion({
-        model: "gpt-3.5-turbo-0613",
-        messages: chatlog,
-      });
-    } catch (error) {
-      msg.reply(`I had a error while thinking of a response: ${error.message}`);
-      return;
+    const queryOneResponse = await getStructuredInnerDialogueResponse(innerDialogue, emotionalReactionStructure);
+    console.log(`Processing - Initial Emotional Reaction: ${queryOneResponse}`);  
+    
+    if (!queryOneResponse){
+	    msg.reply("Error - Having trouble thinking");
     }
+    
+    let emotionalReaction = new Emotions({
+	    emotion: queryOneResponse.emotion,
+	    reason: queryOneResponse.reason,
+	    intensity: queryOneResponse.intensity,
+	    timestamp: new Date()
+    }); 
+    
+    self.emotion = emotionalReaction;    
+    
+    innerDialogue.push({role: "assistant", content: queryOneResponse})
+    
+    
+    // RESPONSE CRAFTING
+    let queryTwo = {
+	  role: "user",
+	  content: `What would ${self.name} want their response to convey, and with what tone? Given their personality, what they want to convey, and the tone they want, construct their message response. Respond with the following JSON object: {
+	message: "",
+	purpose: "",
+	tone: ""
+} Provide the message, purpose, and tone.`
+    };
+    
+    innerDialogue.push(queryTwo)
 
-    const botReply = result.data.choices[0].message.content;
-
-    // Create new message object for database
-    const new_user_message = new Messages({
+    const messageResponseStructure = {
+      type: "json_schema",
+      json_schema:{
+        name: "message_response",
+        schema: {
+          type: "object",
+          properties: {
+            message: {
+              description: "The response message",
+              type: "string"
+            },
+            purpose: {
+              description: "The purpose/intent behind the message",
+              type: "string"
+            },
+            tone: {
+              description: "The tone of the message",
+              type: "string"
+            }
+          },
+          additionalProperties: false
+        }
+      }
+    };
+    
+    const queryTwoResponse = await getStructuredInnerDialogueResponse(innerDialogue, messageResponseStructure);
+    console.log(`Processing - Message Response: ${queryTwoResponse}`);  
+    
+      if (!queryTwoResponse){
+	    msg.reply("Error - Having trouble thinking");
+    }
+    
+    innerDialogue.push({role: "assistant", content: queryTwoResponse})
+    
+    let messageResponse= new Messages({
+	    message: queryTwoResponse.message,
+	    purpose: queryTwoResponse.purpose,
+	    tone: queryTwoResponse.tone,
+	    timestamp: new Date(),
+	    is_bot: true
+    }); 
+    
+     let incomingMessage = new Messages({
+	    message: msg.content,
+	    purpose: "",
+	    tone: "",
       timestamp: new Date(),
-      content: msg.content,
-      is_bot: false,
+      is_bot: false
     });
+    
+    userConversation.messages.push(incomingMessage);
+    userConversation.messages.push(messageResponse);
+    
+    // REFLECTION
+    let queryThree = {
+	    role: "user",
+	    content: `How does ${self.name} feel after sending their response, and for what reason? Respond with the following JSON object: { emotion: "", reason: "", intensity: 1-10}. Provide the emotion, reason, and intensity level (1-10). `
+    };
+    
+    innerDialogue.push(queryThree);
 
-    // Create new message object for database
-    const new_bot_message = new Messages({
-      timestamp: new Date(),
-      content: botReply,
-      is_bot: true,
-    });
+    const queryThreeResponse = await getStructuredInnerDialogueResponse(innerDialogue, emotionalReactionStructure);
+    console.log(`Processing - Final Emotional Reaction: ${queryThreeResponse}`); 
+    
+      if (!queryThreeResponse){
+	    msg.reply("Error - Having trouble thinking");
+    }
+    
+    
+    let finalEmotionalReaction = new Emotions({
+	    emotion: queryThreeResponse.emotion,
+	    reason: queryThreeResponse.reason,
+	    intensity: queryThreeResponse.intensity,
+	    timestamp: new Date()
+    }); 
+    
+    self.emotion = finalEmotionalReaction;    
+    innerDialogue.push({role: "assistant", content: queryThreeResponse})
+    
+    let queryFour = {
+	    role: "user",
+	    content: `What are ${self.name}'s updated sentiment and thoughts towards ${user.name} after this message exchange? For a reminder, this is what they were previously: ${user.sentiment}. Respond with the following JSON Object: {
+	sentiment: "",
+	thoughts: "",
+}. Provide the sentiment and thoughts.`
+    };
+    
+    innerDialogue.push(queryFour);
 
-    userConversation.messages.push(new_user_message);
-    userConversation.messages.push(new_bot_message);
+    const sentimentResponseStructure = {
+      type: "json_schema",
+      json_schema:{
+        name: "message_response",
+        schema: {
+          type: "object",
+          properties: {
+            sentiment: {
+              description: "The sentiment being felt",
+              type: "string"
+            },
+            thoughts: {
+              description: "The thoughts behind the sentiment",
+              type: "string"
+            }
+          },
+          additionalProperties: false
+        }
+      }
+    };
 
-    await userConversation.save();
-
-    msg.reply(botReply);
+    const queryFourResponse = await getInnerDialogueResponse(innerDialogue, sentimentResponseStructure);
+    console.log(`Processing - Updated Sentiment: ${queryFourResponse}`); 
+    
+    if (!queryFourResponse){
+	    msg.reply("Error - Having trouble thinking");
+    }
+    
+    let updatedSentiment = new Sentiments({
+	    sentiment: queryFourResponse.sentiment,
+	    thoughts: queryFourResponse.thoughts,
+	    timestamp: new Date()
+    }); 
+    
+    user.sentiment = updatedSentiment;    
+    innerDialogue.push({role: "assistant", content: queryFourResponse})
+    
+    await Promise.all([self.save(), user.save(), userConversation.save()]);
+    msg.reply(parsedResponseTwo.message);
   }
 
-  // Function to handle conversation completion
-  async function handleConversationCompletion() {
-    if (!userConversation) {
-      return;
-    }
+  async function getInnerDialogueResponse(innerDialogue){
+	  try{
+		  let result = await openai.chat.completions.create({
+			  model: "gpt-4o-mini-2024-07-18",
+			  messages: innerDialogue
+		  });
+		  return result.data.choices[0].message.content;
+	  } catch (error){
+		  msg.reply(`Error - ${error.message}`);
+		  return null;
+	  }
+  
+  }
 
-    const currentTime = Date.now();
-    const elapsedTime = currentTime - lastUserInteractionTime;
+  async function getStructuredInnerDialogueResponse(innerDialogue, structure){
+	  try{
+		  let result = await openai.chat.completions.create({
+			  model: "gpt-4o-mini-2024-07-18",
+			  messages: innerDialogue,
+        response_format: structure,
+		  });
 
-    if (elapsedTime >= inactivityThreshold) {
-      // Perform the conversation completion logic
 
-      // Create a conversation string
-      let conversationString = "";
+		  const output = result.data.choices[0].message;
 
-      const messageThread = userConversation.messages;
-
-      messageThread.forEach((message) => {
-        let role = `${user.name}`;
-        if (message.is_bot) {
-          role = "Jasmine";
-        }
-
-        conversationString += `${role}: ${message.content}\n`;
-      });
-
-      const prompt = [
-        {
-          role: "user",
-          content: `"${conversationString}"\n In less than 100 completion tokens, summarize the meaning of the above conversation between Jasmine and ${user.name}.`,
-        },
-      ];
-
-      let result;
-      try {
-        result = await openai.createChatCompletion({
-          model: "gpt-3.5-turbo-0613",
-          messages: prompt,
-        });
-      } catch (error) {
-        console.log("An error occured creating a summary:", error.message);
-        return;
+      if (output.refusal){
+        msg.reply(`Error - ${output.refusal}`);
+        return null;
+      }else{
+        return output.parsed
       }
-
-      const summary = result.data.choices[0].message.content;
-      const summaryDate = new Date();
-      const summaryQuery = new Summaries({
-        user_id: user.user_id,
-        timestamp: summaryDate,
-        content: `On ${summaryDate}, ${summary}`,
-      });
-
-      await summaryQuery.save();
-      await Conversations.deleteOne({
-        conversation_id: userConversation.conversation_id,
-      });
-
-      // Reset the inactivity-related variables
-      lastUserInteractionTime = null;
-      clearTimeout(inactivityTimer);
-    }
+	  } catch (error){
+		  msg.reply(`Error - ${error.message}`);
+		  return null;
+	  }
+  
   }
 
   handleUserMessage();
