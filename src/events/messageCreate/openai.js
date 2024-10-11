@@ -11,7 +11,7 @@ const {
 const { parse } = require("dotenv");
 
 /**
- * @brief Handle a message sent in the server, using the openai gpt-3.5 API
+ * @brief Handle a message sent in the server.
  * @param {Client} client - The bot
  * @param {Message} msg - The message which was sent
  */
@@ -29,79 +29,79 @@ module.exports = async (client, msg) => {
   // Send the bot typing status
   await msg.channel.sendTyping();
 
-  // Function to handle user message
+  const getEmotionSchema = () => ({
+    type: "json_schema",
+    json_schema: {
+      name: "emotional_reaction",
+      schema: {
+        type: "object",
+        properties: {
+          emotion: {
+            description: "The emotion being felt",
+            type: "string",
+          },
+          reason: {
+            description: "The reason behind the emotion",
+            type: "string",
+          },
+          intensity: {
+            description: "Emotion intensity (1-10)",
+            type: "number",
+          },
+        },
+        additionalProperties: false,
+      },
+    },
+  });
+
+  const getMessageSchema = () => ({
+    type: "json_schema",
+    json_schema: {
+      name: "message_response",
+      schema: {
+        type: "object",
+        properties: {
+          message: {
+            description: "The response message",
+            type: "string",
+          },
+          purpose: {
+            description: "Message purpose",
+            type: "string",
+          },
+          tone: {
+            description: "Message tone",
+            type: "string",
+          },
+        },
+        additionalProperties: false,
+      },
+    },
+  });
+
+  const getSentimentSchema = () => ({
+    type: "json_schema",
+    json_schema: {
+      name: "message_response",
+      schema: {
+        type: "object",
+        properties: {
+          sentiment: {
+            description: "The sentiment being felt",
+            type: "string",
+          },
+          thoughts: {
+            description: "Thoughts behind the sentiment",
+            type: "string",
+          },
+        },
+        additionalProperties: false,
+      },
+    },
+  });
+
+
   async function handleUserMessage() {
-    const emotionalReactionStructure = {
-      type: "json_schema",
-      json_schema: {
-        name: "emotional_reaction",
-        schema: {
-          type: "object",
-          properties: {
-            emotion: {
-              description: "The emotion being felt",
-              type: "string",
-            },
-            reason: {
-              description: "The reason behind the emotion being felt",
-              type: "string",
-            },
-            intensity: {
-              description:
-                "The level of intesity the emotion is being felt, on a scale of 1 to 10",
-              type: "number",
-            },
-          },
-          additionalProperties: false,
-        },
-      },
-    };
-
-    const messageResponseStructure = {
-      type: "json_schema",
-      json_schema: {
-        name: "message_response",
-        schema: {
-          type: "object",
-          properties: {
-            message: {
-              description: "The response message",
-              type: "string",
-            },
-            purpose: {
-              description: "The purpose/intent behind the message",
-              type: "string",
-            },
-            tone: {
-              description: "The tone of the message",
-              type: "string",
-            },
-          },
-          additionalProperties: false,
-        },
-      },
-    };
-
-    const sentimentResponseStructure = {
-      type: "json_schema",
-      json_schema: {
-        name: "message_response",
-        schema: {
-          type: "object",
-          properties: {
-            sentiment: {
-              description: "The sentiment being felt",
-              type: "string",
-            },
-            thoughts: {
-              description: "The thoughts behind the sentiment",
-              type: "string",
-            },
-          },
-          additionalProperties: false,
-        },
-      },
-    };
 
     // HANDLE CONTEXT //
     let self = await grabSelf("Jasmine");
@@ -109,58 +109,47 @@ module.exports = async (client, msg) => {
 
     let userConversation = await Conversations.findOne({
       user_id: user.user_id,
-    });
-    let userConversationMessages = [];
+    }) || new Conversations({ user_id: user.user_id });
     let spliceBound = 4;
-    if (!userConversation) {
-      userConversation = new Conversations({
-        user_id: user.user_id,
-      });
-    } else {
-      userConversationMessages = userConversation.messages.slice(-spliceBound);
-    }
+    let userMessages = userConversation.messages.slice(-spliceBound);
 
     // MESSAGE ANALYSIS
-    let queryOne = {
+    let initialEmotionQuery = {
       role: "user",
-      content: `This is the ongoing conversation between ${self.name} and ${user.name}: ${userConversationMessages}. ${self.name} currently feels ${self.emotional_status.emotion} at an intensity level ${self.emotional_status.level} because ${self.emotional_status.reason}. ${self.name} currently has ${user.sentiment.sentiment} towards ${user.name} because ${user.sentiment.thoughts}. ${user.name} just sent a new message to ${self.name}: ${msg.content}. This is ${self.name}'s personality: ${self.personality}. How would this new message make ${self.name} feel? Respond with the following JSON object: { emotion: "", reason: "", intensity: 1-10}. Provide the emotion, reason, and intensity level (1-10).`,
+      content: `This is the ongoing conversation between ${self.name} and ${user.name}: ${userMessages}. ${self.name} currently feels ${self.emotional_status.emotion} at an intensity level ${self.emotional_status.level} because ${self.emotional_status.reason}. ${self.name} currently has ${user.sentiment.sentiment} towards ${user.name} because ${user.sentiment.thoughts}. ${user.name} just sent a new message to ${self.name}: ${msg.content}. This is ${self.name}'s personality: ${self.personality}. How would this new message make ${self.name} feel? Respond with the following JSON object: { emotion: "", reason: "", intensity: 1-10}. Provide the emotion, reason, and intensity level (1-10).`,
     };
 
-    if (userConversationMessages.count == 0) {
-      queryOne = {
+    if (userMessages.count == 0) {
+      initialEmotionQuery = {
         role: "user",
         content: `${self.name} currently feels ${self.emotional_status.emotion} at an intensity level ${self.emotional_status.level} because ${self.emotional_status.reason}. ${self.name} currently has ${user.sentiment.sentiment} towards ${user.name} because ${user.sentiment.thoughts}. ${user.name} just sent new message to ${self.name}: ${msg.content}. This is ${self.name}'s personality: ${self.personality}. How would this new message make ${self.name} feel? Respond with the following JSON object: { emotion: "", reason: "", intensity: 1-10}. Provide the emotion, reason, and intensity level (1-10).`,
       };
     }
 
-    let innerDialogue = [queryOne];
+    let innerDialogue = [initialEmotionQuery];
 
-    const queryOneResponse = await getStructuredInnerDialogueResponse(
+    const initialEmotionQueryResponse = await getStructuredInnerDialogueResponse(
       innerDialogue,
-      emotionalReactionStructure
+      getEmotionSchema()
     );
 
     innerDialogue.push({
       role: "assistant",
-      content: `${JSON.stringify(queryOneResponse)}`,
+      content: `${JSON.stringify(initialEmotionQueryResponse)}`,
     });
 
-    if (queryOneResponse == null) {
-      msg.reply("Error - Having trouble thinking");
+    if (!initialEmotionQueryResponse) {
+      msg.reply("Error processing emotional reaction");
       return;
     }
 
-    let emotionalReaction = new Emotions({
-      emotion: queryOneResponse.emotion,
-      reason: queryOneResponse.reason,
-      intensity: queryOneResponse.intensity,
+    self.emotional_status = new Emotions({
+      ...initialEmotionQueryResponse,
       timestamp: new Date(),
     });
 
-    self.emotion = emotionalReaction;
-
     // RESPONSE CRAFTING
-    let queryTwo = {
+    let messageResponseQuery = {
       role: "user",
       content: `What would ${self.name} want their response to convey, and with what tone? Given their personality, what they want to convey, and the tone they want, construct their message response. Respond with the following JSON object: {
 	message: "",
@@ -169,20 +158,20 @@ module.exports = async (client, msg) => {
 } Provide the message, purpose, and tone.`,
     };
 
-    innerDialogue.push(queryTwo);
+    innerDialogue.push(messageResponseQuery);
 
-    const queryTwoResponse = await getStructuredInnerDialogueResponse(
+    const messageResponseQueryResponse = await getStructuredInnerDialogueResponse(
       innerDialogue,
-      messageResponseStructure
+      getMessageSchema()
     );
 
     innerDialogue.push({
       role: "assistant",
-      content: `${JSON.stringify(queryTwoResponse)}`,
+      content: `${JSON.stringify(messageResponseQueryResponse)}`,
     });
 
-    if (queryTwoResponse == null) {
-      msg.reply("Error - Having trouble thinking");
+    if (!messageResponseQueryResponse) {
+      msg.reply("Error generating response");
     }
 
     let incomingMessage = new Messages({
@@ -194,49 +183,41 @@ module.exports = async (client, msg) => {
     });
 
     let messageResponse = new Messages({
-      message: queryTwoResponse.message,
-      purpose: queryTwoResponse.purpose,
-      tone: queryTwoResponse.tone,
+      ...messageResponseQueryResponse,
       timestamp: new Date(),
       is_bot: true,
     });
 
-    userConversation.messages.push(incomingMessage);
-    userConversation.messages.push(messageResponse);
+    userConversation.messages.push(incomingMessage, messageResponse);
 
     // REFLECTION
-    let queryThree = {
+    let finalEmotionQuery = {
       role: "user",
       content: `How does ${self.name} feel after sending their response, and for what reason? Respond with the following JSON object: { emotion: "", reason: "", intensity: 1-10}. Provide the emotion, reason, and intensity level (1-10). `,
     };
 
-    innerDialogue.push(queryThree);
+    innerDialogue.push(finalEmotionQuery);
 
-    const queryThreeResponse = await getStructuredInnerDialogueResponse(
+    const finalEmotionQueryResponse = await getStructuredInnerDialogueResponse(
       innerDialogue,
-      emotionalReactionStructure
+      getEmotionSchema()
     );
 
     innerDialogue.push({
       role: "assistant",
-      content: `${JSON.stringify(queryThreeResponse)}`,
+      content: `${JSON.stringify(finalEmotionQueryResponse)}`,
     });
 
-    if (queryThreeResponse == null) {
-      msg.reply("Error - Having trouble thinking");
+    if (!finalEmotionQueryResponse) {
+      msg.reply("Error reflecting on emotion");
     }
 
-    let finalEmotionalReaction = new Emotions({
-      emotion: queryThreeResponse.emotion,
-      reason: queryThreeResponse.reason,
-      intensity: queryThreeResponse.intensity,
+    self.emotional_status = new Emotions({
+      ...finalEmotionQueryResponse,
       timestamp: new Date(),
     });
 
-    self.emotion = finalEmotionalReaction;
-    
-
-    let queryFour = {
+    let sentimentQuery = {
       role: "user",
       content: `What are ${self.name}'s updated sentiment and thoughts towards ${user.name} after this message exchange? For a reminder, this is what they were previously: ${user.sentiment}. Respond with the following JSON Object: {
 	sentiment: "",
@@ -244,33 +225,29 @@ module.exports = async (client, msg) => {
 }. Provide the sentiment and thoughts.`,
     };
 
-    innerDialogue.push(queryFour);
+    innerDialogue.push(sentimentQuery);
 
-    const queryFourResponse = await getStructuredInnerDialogueResponse(
+    const sentimentQueryResponse = await getStructuredInnerDialogueResponse(
       innerDialogue,
-      sentimentResponseStructure
+      getSentimentSchema()
     );
 
     innerDialogue.push({
       role: "assistant",
-      content: `${JSON.stringify(queryFourResponse)}`,
+      content: `${JSON.stringify(sentimentQueryResponse)}`,
     });
 
-    if (queryFourResponse == null) {
-      msg.reply("Error - Having trouble thinking");
+    if (!sentimentQueryResponse) {
+      msg.reply("Error reflecting on sentiment");
     }
 
-    let updatedSentiment = new Sentiments({
-      sentiment: queryFourResponse.sentiment,
-      thoughts: queryFourResponse.thoughts,
+    user.sentiment = new Sentiments({
+      ...sentimentQueryResponse,
       timestamp: new Date(),
     });
 
-    user.sentiment = updatedSentiment;
-    
-
     await Promise.all([self.save(), user.save(), userConversation.save()]);
-    msg.reply(queryTwoResponse.message);
+    msg.reply(messageResponseQueryResponse.message);
   }
 
   async function getStructuredInnerDialogueResponse(innerDialogue, structure) {
@@ -280,27 +257,25 @@ module.exports = async (client, msg) => {
         messages: innerDialogue,
         response_format: structure,
       });
-      console.log(JSON.stringify(JSON.parse(response.data.choices[0].message.content)));
+      console.log("---")
+      console.log(
+        JSON.stringify(JSON.parse(response.data.choices[0].message.content))
+      );
 
-      let parsedOutput;
-      try {
-        parsedOutput = JSON.parse(
-          response.data.choices[0].message.content.trim()
-        );
-      } catch (parseError) {
-        console.error(`Error parsing output: ${parseError.message}`);
-        return null;
-      }
+      const parsed = JSON.parse(
+        response.data.choices[0].message.content.trim()
+      );
 
-      return parsedOutput;
+      return parsed;
+
     } catch (error) {
-      msg.reply(`Error - ${error.message}`);
+      msg.reply(`Error: ${error.message}`);
       return null;
     }
   }
 
-  async function grabUser(msg_author) {
-    let user = await Users.findOne({ discord_id: msg_author });
+  async function grabUser(authorId) {
+    let user = await Users.findOne({ discord_id: authorId });
 
     if (!user) {
       user = new Users({
@@ -323,9 +298,9 @@ module.exports = async (client, msg) => {
 
     if (!self) {
       self = new Self({
-        name: "Jasmine",
+        name: process.env.BOT_NAME,
         personality:
-          "Jasmine is spirited, independent, and fiercely loyal. She possesses a strong sense of justice and a desire for freedom, often challenging societal norms to pursue her own happiness. Her adventurous nature drives her to seek new experiences beyond the palace walls, and she values authenticity in herself and others. Jasmine's compassion shines through her interactions, making her a strong advocate for those who cannot speak for themselves.",
+          process.env.BOT_PERSONALITY,
         emotional_status: new Emotions({
           emotion: "Neutral",
           reason: "I have just been created, and have no experiences",
@@ -334,7 +309,6 @@ module.exports = async (client, msg) => {
         }),
       });
     }
-
     return self;
   }
 
