@@ -83,7 +83,7 @@ const selfSchema = new Schema({
       default: [],
   },
   emotional_status: {
-      type: [emotionSchema],
+      type: emotionSchema,
       required: true,
   }
 });
