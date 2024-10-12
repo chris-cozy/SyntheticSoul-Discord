@@ -8,7 +8,6 @@ const {
   Emotions,
   Self,
 } = require("../../schemas/users");
-const { parse } = require("dotenv");
 
 /**
  * @brief Handle a message sent in the server.
@@ -156,7 +155,7 @@ module.exports = async (client, msg) => {
     // RESPONSE CRAFTING
     let messageResponseQuery = {
       role: "user",
-      content: `What would ${self.name} want their response to convey, and with what tone? Given their personality, what they want to convey, and the tone they want, construct their message response. Respond with the following JSON object: {
+      content: `What would ${self.name} want their response to convey, and with what tone? Given this information, construct their message response. They speak, type, and use punctuation in a way that aligns with their personality. Respond with the following JSON object: {
 	message: "",
 	purpose: "",
 	tone: ""
@@ -299,7 +298,7 @@ module.exports = async (client, msg) => {
     if (!self) {
       self = new Self({
         name: process.env.BOT_NAME,
-        personality_matrix: process.env.BOT_PERSONALITY_MATRIX,
+        personality_matrix: JSON.parse(process.env.BOT_PERSONALITY_MATRIX),
       });
 
       await self.save();
