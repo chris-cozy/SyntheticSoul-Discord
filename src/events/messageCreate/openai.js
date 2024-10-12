@@ -299,6 +299,7 @@ module.exports = async (client, msg) => {
     if (!self) {
       self = new Self({
         name: process.env.BOT_NAME,
+        personality_matrix: process.env.BOT_PERSONALITY_MATRIX,
       });
 
       await self.save();
