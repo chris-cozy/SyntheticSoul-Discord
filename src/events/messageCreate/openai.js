@@ -100,38 +100,41 @@ module.exports = async (client, msg) => {
     },
   });
 
-
   async function handleUserMessage() {
-
     // HANDLE CONTEXT //
     let self = await grabSelf("Jasmine");
     let user = await grabUser(msg.author.id);
 
-    let userConversation = await Conversations.findOne({
-      user_id: user.user_id,
-    }) || new Conversations({ user_id: user.user_id });
-    let spliceBound = 4;
+    const personalityString = mergePersonality(self, user);
+    // console.log(personalityString);
+
+    let userConversation =
+      (await Conversations.findOne({
+        user_id: user.user_id,
+      })) || new Conversations({ user_id: user.user_id });
+    let spliceBound = 10;
     let userMessages = userConversation.messages.slice(-spliceBound);
 
     // MESSAGE ANALYSIS
     let initialEmotionQuery = {
       role: "user",
-      content: `This is the ongoing conversation between ${self.name} and ${user.name}: ${userMessages}. ${self.name} currently feels ${self.emotional_status.emotion} at an intensity level ${self.emotional_status.level} because ${self.emotional_status.reason}. ${self.name} currently has ${user.sentiment.sentiment} towards ${user.name} because ${user.sentiment.thoughts}. ${user.name} just sent a new message to ${self.name}: ${msg.content}. This is ${self.name}'s personality: ${self.personality}. How would this new message make ${self.name} feel? Respond with the following JSON object: { emotion: "", reason: "", intensity: 1-10}. Provide the emotion, reason, and intensity level (1-10).`,
+      content: `This is the ongoing conversation between ${self.name} and ${user.name}: ${userMessages}. ${self.name} currently feels ${self.emotional_status.emotion} at an intensity level ${self.emotional_status.intensity} because ${self.emotional_status.reason}. ${self.name} currently has ${user.sentiment.sentiment} towards ${user.name} because ${user.sentiment.thoughts}. ${user.name} just sent a new message to ${self.name}: ${msg.content}. This is ${self.name}'s personality: ${personalityString}. How would this new message make ${self.name} feel? Respond with the following JSON object: { emotion: "", reason: "", intensity: 1-10}. Provide the emotion, reason, and intensity level (1-10).`,
     };
 
     if (userMessages.count == 0) {
       initialEmotionQuery = {
         role: "user",
-        content: `${self.name} currently feels ${self.emotional_status.emotion} at an intensity level ${self.emotional_status.level} because ${self.emotional_status.reason}. ${self.name} currently has ${user.sentiment.sentiment} towards ${user.name} because ${user.sentiment.thoughts}. ${user.name} just sent new message to ${self.name}: ${msg.content}. This is ${self.name}'s personality: ${self.personality}. How would this new message make ${self.name} feel? Respond with the following JSON object: { emotion: "", reason: "", intensity: 1-10}. Provide the emotion, reason, and intensity level (1-10).`,
+        content: `${self.name} currently feels ${self.emotional_status.emotion} at an intensity level ${self.emotional_status.intensity} because ${self.emotional_status.reason}. ${self.name} currently has ${user.sentiment.sentiment} towards ${user.name} because ${user.sentiment.thoughts}. ${user.name} just sent new message to ${self.name}: ${msg.content}. This is ${self.name}'s personality: ${personalityString}. How would this new message make ${self.name} feel? Respond with the following JSON object: { emotion: "", reason: "", intensity: 1-10}. Provide the emotion, reason, and intensity level (1-10).`,
       };
     }
 
     let innerDialogue = [initialEmotionQuery];
 
-    const initialEmotionQueryResponse = await getStructuredInnerDialogueResponse(
-      innerDialogue,
-      getEmotionSchema()
-    );
+    const initialEmotionQueryResponse =
+      await getStructuredInnerDialogueResponse(
+        innerDialogue,
+        getEmotionSchema()
+      );
 
     innerDialogue.push({
       role: "assistant",
@@ -160,10 +163,11 @@ module.exports = async (client, msg) => {
 
     innerDialogue.push(messageResponseQuery);
 
-    const messageResponseQueryResponse = await getStructuredInnerDialogueResponse(
-      innerDialogue,
-      getMessageSchema()
-    );
+    const messageResponseQueryResponse =
+      await getStructuredInnerDialogueResponse(
+        innerDialogue,
+        getMessageSchema()
+      );
 
     innerDialogue.push({
       role: "assistant",
@@ -257,7 +261,7 @@ module.exports = async (client, msg) => {
         messages: innerDialogue,
         response_format: structure,
       });
-      console.log("---")
+      console.log("---");
       console.log(
         JSON.stringify(JSON.parse(response.data.choices[0].message.content))
       );
@@ -267,7 +271,6 @@ module.exports = async (client, msg) => {
       );
 
       return parsed;
-
     } catch (error) {
       msg.reply(`Error: ${error.message}`);
       return null;
@@ -281,13 +284,9 @@ module.exports = async (client, msg) => {
       user = new Users({
         name: msg.author.username,
         discord_id: msg.author.id,
-        summary: "I don't know anything about this person yet",
-        sentiment: new Sentiments({
-          sentiment: "neutral",
-          thoughts: "I don't know anything about this person yet",
-          timestamp: new Date(),
-        }),
       });
+      await user.save();
+      user = await Users.findOne({ discord_id: authorId });
     }
 
     return user;
@@ -299,17 +298,195 @@ module.exports = async (client, msg) => {
     if (!self) {
       self = new Self({
         name: process.env.BOT_NAME,
-        personality:
-          process.env.BOT_PERSONALITY,
-        emotional_status: new Emotions({
-          emotion: "Neutral",
-          reason: "I have just been created, and have no experiences",
-          intensity: 5,
-          timestamp: new Date(),
-        }),
       });
+
+      await self.save();
+      self = await Self.findOne({ name: agentName });
     }
     return self;
+  }
+
+  function mergePersonality(self, user) {
+    let min = self.personality_matrix.friendliness.min;
+    let max = self.personality_matrix.friendliness.max;
+    let mergedPersonality = {
+      friendliness: {
+        description:
+          `How warm and welcoming they are in their interactions. Value: ${min} (cold/distant) to ${max} (Extremely friendly)`,
+          value: 0,
+      },
+      trust: {
+        description:
+          `How easily they trust others. Value: ${min} (distrustful) to ${max} (fully trusting)`,
+          value: 0,
+      },
+      curiosity: {
+        description:
+          `How eager they are to learn about the user or situation. Value: ${min} (indifferent) to ${max} (extremely curious)`,
+          value: 0,
+      },
+      empathy: {
+        description:
+          `How much they understand and share the feelings of others. Value: ${min} (lacking empathy) to ${max} (highly empathetic)`,
+          value: 0,
+      },
+      humor: {
+        description:
+          `How likely they are to be playful or joke around. Value: ${min} (serious) to ${max} (highly playful)`,
+          value: 0,
+      },
+      seriousness: {
+        description:
+          `How formal and focused they are when interacting. Value: ${min} (laid-back) to ${max} (highly serious)`,
+          value: 0,
+      },
+      optimism: {
+        description:
+          `How positive they are when interpreting situations. Value: ${min} (pessimistic) to ${max} (very optimistic)`,
+          value: 0,
+      },
+      confidence: {
+        description:
+          `How assertive or self-assured they are in their actions or opinions. Value: ${min} (insecure) to ${max} (highly confident)`,
+          value: 0,
+      },
+      adventurousness: {
+        description:
+          `How willing they are to take risks or embrace new ideas. Value: ${min} (risk-adverse) to ${max} (adventurous)`,
+          value: 0,
+      },
+      patience: {
+        description:
+          `How tolerant they are in challenging situations. Value: ${min} (impatient) to ${max} (very patient)`,
+          value: 0,
+      },
+      independence: {
+        description:
+          `How much they rely on external validation, or prefers to make decisinos on their own. Value: ${min} (dependent on others) to ${max} (highly independent)`,
+          value: 0,
+      },
+      compassion: {
+        description:
+          `Their level of care or concern for others. Value: ${min} (indifferent) to ${max} (deeply compassionate)`,
+          value: 0,
+      },
+      creativity: {
+        description:
+          `How likely they are to approach problems in unique or imaginative ways. Value: ${min} (rigid thinker) to ${max} (highly creative)`,
+          value: 0,
+      },
+      stubbornness: {
+        description:
+          `How resistant they are to changing their mind once they've formed an opinion. Value: ${min} (open-minded) to ${max} (highly stubborn)`,
+          value: 0,
+      },
+      impulsiveness: {
+        description:
+          `How quickly they react without thinking or planning ahead. Value: ${min} (calculated) to ${max} (impulsive)`,
+          value: 0,
+      },
+      discipline: {
+        description:
+          `How much they value structure, rules, and staying organized. Value: ${min} (carefree) to ${max} (highly disciplined)`,
+          value: 0,
+      },
+      assertiveness: {
+        description:
+          `How forcefully they push their opinions or take the lead in conversations. Value: ${min} (passive) to ${max} (assertive)`,
+          value: 0,
+      },
+      skepticism: {
+        description:
+          `How much they question the treuth or intentions of others. Value: ${min} (gullible) to ${max} (highly skeptical)`,
+          value: 0,
+      },
+      affection: {
+        description:
+          `How emotionally expressive or loving they are toward others. Value: ${min} (reserved) to ${max} (very affectionate)`,
+          value: 0,
+      },
+      adaptability: {
+        description:
+          `How easily they adjust to new situations, topics, or personalities. Value: ${min} (rigid) to ${max} (highly adaptable)`,
+          value: 0,
+      },
+      sociability: {
+        description:
+          `How much they enjoy interacting with others or initiating conversation. Value: ${min} (introverted) to ${max} (extroverted)`,
+          value: 0,
+      },
+      diplomacy: {
+        description:
+          `How tactful they are in dealing with conflicts or differing opinions. Value: ${min} (blunt) to ${max} (highly diplomatic)`,
+          value: 0,
+      },
+      humility: {
+        description:
+          `How humble or modest they are, avoiding arrogance. Value: ${min} (arrogant) to ${max} (humble)`,
+          value: 0,
+      },
+      loyalty: {
+        description:
+          `How loyal they are to particular people based on past interactions. Value: ${min} (disloyal) to ${max} (extremely loyal)`,
+          value: 0,
+      },
+      jealousy: {
+        description:
+          `How likely they are to feel envious or threatened by others' relationships or actions. Value: ${min} (not jealous) to ${max} (easily jealous)`,
+          value: 0,
+      },
+      resilience: {
+        description:
+          `How well they handle setbacks or negative emotions. Value: ${min} (easily upset) to ${max} (emotionally resilient)`,
+          value: 0,
+      },
+      mood_stability: {
+        description:
+          `How likely their mood is to shift rapidly. Value: ${min} (volatile) to ${max} (stable)`,
+          value: 0,
+      },
+      forgiveness: {
+        description:
+          `How easily they forgive someone after a negative interaction. Value: ${min} (holds grudges) to ${max} (easily forgiving)`,
+          value: 0,
+      },
+      gratitude: {
+        description:
+          `How thankful they feel when receiving compliments or assistance. Value: ${min} (unappreciative) to ${max} (very grateful)`,
+          value: 0,
+      },
+
+      self_consciousness: {
+        description:
+          `How much they worry about how they are perceived by others. Value: ${min} (carefree) to ${max} (very self-conscious)`,
+          value: 0,
+      },
+      openness: {
+        description:
+          `How willing they are to engage in new experiences. Value: ${min} (avoidant) to ${max} (very willing)`,
+          value: 0,
+      },
+      neuroticism: {
+        description:
+          `How sensitive they are to negative emotions like anxiety and stress. Value: ${min} (relaxed) to ${max} (very anxious)`,
+        value: 0,
+      },
+      excitement: {
+        description:
+          `How easily they get enthusiastic and animated. Value: ${min} (reserved) to ${max} (very energetic)`,
+          value: 0,
+      },
+    };
+
+    Object.keys(mergedPersonality).forEach((trait) => {
+      if (mergedPersonality[trait].value !== undefined) {
+        mergedPersonality[trait].value =
+          self.personality_matrix[trait].value +
+          user.personality_modifier[trait].value;
+      }
+    });
+
+    return JSON.stringify(mergedPersonality, null, 2);
   }
 
   handleUserMessage();
