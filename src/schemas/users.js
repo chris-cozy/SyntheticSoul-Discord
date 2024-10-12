@@ -397,6 +397,21 @@ const emotionSchema = new Schema({
   },
 });
 
+const activitySchema = new Schema({
+  name: {
+    type: String, 
+    required: true,
+  },
+  category: {
+    type: String,
+    required: true
+  },
+  item: {
+    type: String,
+    required: false,
+  }
+});
+
 const memorySchema = new Schema({
   memory_id: {
     type: Types.ObjectId,
@@ -467,6 +482,14 @@ const selfSchema = new Schema({
       timestamp: new Date(),
     }
   },
+  activity_status: {
+    type: activitySchema,
+    required: false,
+    default: {
+      name: "Simply existing.",
+      category: "custom",
+    }
+  }
 });
 
 /**
@@ -689,4 +712,5 @@ module.exports = {
   Self: model("selves", selfSchema),
   Personality: model("personalities", personalitySchema),
   PersonalityTrait: model("personality_traits", personalityTraitSchema),
+  Activity: model("activity", activitySchema),
 };
