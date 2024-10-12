@@ -20,7 +20,8 @@ const messageSchema = new Schema({
   },
   timestamp: {
     type: Date,
-    required: true,
+    required: false,
+    default: new Date(),
   },
   is_bot: {
     type: Boolean,

@@ -97,7 +97,7 @@ module.exports = async (client) => {
           self.personality_matrix
         )}. Given this information, what does ${
           self.name
-        } want to do next? Respond with the following JSON object: { name: string, category: string, time: number, item: string}. Provide the name of the activity (If the category is watching - name must be the name of a show, movie, youtube video, or stream (i.e iRobot, A Movie). if it is streaming or playing - name must be the name of a game. if it is custom - name can be any activity that doesn't fit in the other categories. if it is listening - name must be the title of a song, podcast, or audiobook (i.e 'Chasing Cars' by Snow Patrol)), category of the activity, time the activity will be performed for (in milliseconds), and item the activity is being performed on.`,
+        } want to do? Provide the name of the activity (If the category is watching - name must be the name of a show, movie, youtube video, or stream (i.e iRobot, A Movie). if it is streaming or playing - name must be the name of a game. if it is custom - name can be any activity that doesn't fit in the other categories. if it is listening - name must be the name of a song, podcast, or audiobook (i.e 'Chasing Cars' by Snow Patrol)), category of the activity, length of time the activity will be performed for (in milliseconds), and item the activity is being performed on. Respond with the following JSON object: { name: string, category: string, time: number, item: string}. `,
       },
     ];
     const activitySchema = getActivitySchema();
@@ -119,10 +119,7 @@ module.exports = async (client) => {
         console.log(JSON.stringify(activity));
 
         // Get the activity type
-        console.log(activity.category);
         activityType = getType(activity.category);
-
-        console.log(activityType);
 
         client.user.setActivity({
           name: activity.name,
@@ -153,6 +150,7 @@ module.exports = async (client) => {
     if (!self) {
       self = new Self({
         name: process.env.BOT_NAME,
+        personality_matrix: JSON.parse(process.env.BOT_PERSONALITY_MATRIX),
       });
 
       await self.save();

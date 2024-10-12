@@ -8,7 +8,6 @@ const {
   Emotions,
   Self,
 } = require("../../schemas/users");
-const { parse } = require("dotenv");
 
 /**
  * @brief Handle a message sent in the server.
@@ -115,16 +114,18 @@ module.exports = async (client, msg) => {
     let spliceBound = 10;
     let userMessages = userConversation.messages.slice(-spliceBound);
 
+    let receiveDate = new Date();
+
     // MESSAGE ANALYSIS
     let initialEmotionQuery = {
       role: "user",
-      content: `This is the ongoing conversation between ${self.name} and ${user.name}: ${userMessages}. ${self.name}'s current activity is ${JSON.stringify(self.activity_status)}. ${self.name} currently feels ${self.emotional_status.emotion} at an intensity level ${self.emotional_status.intensity} because ${self.emotional_status.reason}. ${self.name} currently has ${user.sentiment.sentiment} towards ${user.name} because ${user.sentiment.thoughts}. ${user.name} just sent a new message to ${self.name}: ${msg.content}. This is ${self.name}'s personality: ${personalityString}. How would this new message make ${self.name} feel? Respond with the following JSON object: { emotion: "", reason: "", intensity: 1-10}. Provide the emotion, reason, and intensity level (1-10).`,
+      content: `It is ${receiveDate}. This is the ongoing conversation between ${self.name} and ${user.name}: ${userMessages}. ${self.name}'s current activity is ${JSON.stringify(self.activity_status)}. ${self.name} currently feels ${self.emotional_status.emotion} at an intensity level ${self.emotional_status.intensity} because ${self.emotional_status.reason}. ${self.name} currently has ${user.sentiment.sentiment} towards ${user.name} because ${user.sentiment.thoughts}. ${user.name} just sent a new message to ${self.name}: ${msg.content}. This is ${self.name}'s personality: ${personalityString}. How would this new message make ${self.name} feel? Respond with the following JSON object: { emotion: "", reason: "", intensity: 1-10}. Provide the emotion, reason, and intensity level (1-10).`,
     };
 
     if (userMessages.count == 0) {
       initialEmotionQuery = {
         role: "user",
-        content: `${self.name} currently feels ${self.emotional_status.emotion} at an intensity level ${self.emotional_status.intensity} because ${self.emotional_status.reason}. ${self.name} currently has ${user.sentiment.sentiment} towards ${user.name} because ${user.sentiment.thoughts}. ${user.name} just sent new message to ${self.name}: ${msg.content}. This is ${self.name}'s personality: ${personalityString}. How would this new message make ${self.name} feel? Respond with the following JSON object: { emotion: "", reason: "", intensity: 1-10}. Provide the emotion, reason, and intensity level (1-10).`,
+        content: `It is ${receiveDate}. ${self.name}'s current activity is ${JSON.stringify(self.activity_status)}. ${self.name} currently feels ${self.emotional_status.emotion} at an intensity level ${self.emotional_status.intensity} because ${self.emotional_status.reason}. ${self.name} currently has ${user.sentiment.sentiment} towards ${user.name} because ${user.sentiment.thoughts}. ${user.name} just sent new message to ${self.name}: ${msg.content}. This is ${self.name}'s personality: ${personalityString}. How would this new message make ${self.name} feel? Respond with the following JSON object: { emotion: "", reason: "", intensity: 1-10}. Provide the emotion, reason, and intensity level (1-10).`,
       };
     }
 
@@ -154,7 +155,7 @@ module.exports = async (client, msg) => {
     // RESPONSE CRAFTING
     let messageResponseQuery = {
       role: "user",
-      content: `What would ${self.name} want their response to convey, and with what tone? Given their personality, what they want to convey, and the tone they want, construct their message response. Respond with the following JSON object: {
+      content: `What would ${self.name} want their response to convey, and with what tone? Given this information, construct their message response. They speak, type, and use punctuation in a way that aligns with their personality. Respond with the following JSON object: {
 	message: "",
 	purpose: "",
 	tone: ""
@@ -182,13 +183,12 @@ module.exports = async (client, msg) => {
       message: msg.content,
       purpose: "unknown",
       tone: "unknown",
-      timestamp: new Date(),
+      timestamp: receiveDate,
       is_bot: false,
     });
 
     let messageResponse = new Messages({
       ...messageResponseQueryResponse,
-      timestamp: new Date(),
       is_bot: true,
     });
 
@@ -298,6 +298,7 @@ module.exports = async (client, msg) => {
     if (!self) {
       self = new Self({
         name: process.env.BOT_NAME,
+        personality_matrix: JSON.parse(process.env.BOT_PERSONALITY_MATRIX),
       });
 
       await self.save();
