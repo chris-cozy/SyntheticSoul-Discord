@@ -118,13 +118,13 @@ module.exports = async (client, msg) => {
     // MESSAGE ANALYSIS
     let initialEmotionQuery = {
       role: "user",
-      content: `This is the ongoing conversation between ${self.name} and ${user.name}: ${userMessages}. ${self.name}'s current activity is ${JSON.stringify(self.activity_status)}. ${self.name} currently feels ${self.emotional_status.emotion} at an intensity level ${self.emotional_status.intensity} because ${self.emotional_status.reason}. ${self.name} currently has ${user.sentiment.sentiment} towards ${user.name} because ${user.sentiment.thoughts}. ${user.name} just sent a new message to ${self.name}: ${msg.content}. This is ${self.name}'s personality: ${personalityString}. How would this new message make ${self.name} feel? Respond with the following JSON object: { emotion: "", reason: "", intensity: 1-10}. Provide the emotion, reason, and intensity level (1-10).`,
+      content: `It is ${new Date()}. This is the ongoing conversation between ${self.name} and ${user.name}: ${userMessages}. ${self.name}'s current activity is ${JSON.stringify(self.activity_status)}. ${self.name} currently feels ${self.emotional_status.emotion} at an intensity level ${self.emotional_status.intensity} because ${self.emotional_status.reason}. ${self.name} currently has ${user.sentiment.sentiment} towards ${user.name} because ${user.sentiment.thoughts}. ${user.name} just sent a new message to ${self.name}: ${msg.content}. This is ${self.name}'s personality: ${personalityString}. How would this new message make ${self.name} feel? Respond with the following JSON object: { emotion: "", reason: "", intensity: 1-10}. Provide the emotion, reason, and intensity level (1-10).`,
     };
 
     if (userMessages.count == 0) {
       initialEmotionQuery = {
         role: "user",
-        content: `${self.name} currently feels ${self.emotional_status.emotion} at an intensity level ${self.emotional_status.intensity} because ${self.emotional_status.reason}. ${self.name} currently has ${user.sentiment.sentiment} towards ${user.name} because ${user.sentiment.thoughts}. ${user.name} just sent new message to ${self.name}: ${msg.content}. This is ${self.name}'s personality: ${personalityString}. How would this new message make ${self.name} feel? Respond with the following JSON object: { emotion: "", reason: "", intensity: 1-10}. Provide the emotion, reason, and intensity level (1-10).`,
+        content: `It is ${new Date()}. ${self.name}'s current activity is ${JSON.stringify(self.activity_status)}. ${self.name} currently feels ${self.emotional_status.emotion} at an intensity level ${self.emotional_status.intensity} because ${self.emotional_status.reason}. ${self.name} currently has ${user.sentiment.sentiment} towards ${user.name} because ${user.sentiment.thoughts}. ${user.name} just sent new message to ${self.name}: ${msg.content}. This is ${self.name}'s personality: ${personalityString}. How would this new message make ${self.name} feel? Respond with the following JSON object: { emotion: "", reason: "", intensity: 1-10}. Provide the emotion, reason, and intensity level (1-10).`,
       };
     }
 
