@@ -1139,7 +1139,6 @@ module.exports = async (client, msg) => {
       })) || new Conversations({ user_id: user.user_id });
     const spliceBound = 15;
     let userMessages = userConversation.messages.slice(-spliceBound);
-    console.log(userMessages);
 
     let receiveDate = new Date();
 
