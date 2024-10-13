@@ -281,7 +281,7 @@ module.exports = async (client, msg) => {
       (await Conversations.findOne({
         user_id: user.user_id,
       })) || new Conversations({ user_id: user.user_id });
-    let spliceBound = 10;
+    let spliceBound = 15;
     let userMessages = userConversation.messages.slice(-spliceBound);
 
     let receiveDate = new Date();
@@ -298,8 +298,6 @@ module.exports = async (client, msg) => {
         content: `It is ${receiveDate}. ${self.name}'s current activity is ${JSON.stringify(self.activity_status)}. ${self.name}'s current emotional state is ${JSON.stringify(self.emotional_status)}. ${self.name} currently has ${user.sentiment.sentiment} towards ${user.name} because ${user.sentiment.thoughts}. ${user.name} just sent new message to ${self.name}: ${msg.content}. This is ${self.name}'s personality: ${personalityString}. How would this new message alter ${self.name}'s emotional state? Provide the new object (whether any emotions' values changed or not), and the reason behind why. For each emotion property, the description property should be taken from the initial emotion object.`,
       };
     }
-
-    console.log(initialEmotionQuery);
 
     let innerDialogue = [initialEmotionQuery];
 
