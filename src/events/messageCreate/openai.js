@@ -31,7 +31,6 @@ module.exports = async (client, msg) => {
     return;
   }
 
-  // Send the bot typing status
   await msg.channel.sendTyping();
 
   const getEmotionStatusSchema = () => ({
@@ -242,27 +241,6 @@ module.exports = async (client, msg) => {
           },
           tone: {
             description: "Message tone",
-            type: "string",
-          },
-        },
-        additionalProperties: false,
-      },
-    },
-  });
-
-  const getSentimentSchema = () => ({
-    type: "json_schema",
-    json_schema: {
-      name: "message_response",
-      schema: {
-        type: "object",
-        properties: {
-          sentiment: {
-            description: "The sentiment being felt",
-            type: "string",
-          },
-          thoughts: {
-            description: "Thoughts behind the sentiment",
             type: "string",
           },
         },
@@ -1152,37 +1130,32 @@ module.exports = async (client, msg) => {
   });
 
   async function handleUserMessage() {
-    // HANDLE CONTEXT //
     let self = await grabSelf(process.env.BOT_NAME);
     let user = await grabUser(msg.author.id);
 
     const personalityString = mergePersonality(self, user);
-    // console.log(personalityString);
 
     let userConversation =
       (await Conversations.findOne({
         user_id: user.user_id,
       })) || new Conversations({ user_id: user.user_id });
-    let spliceBound = 15;
+    const spliceBound = 15;
     let userMessages = userConversation.messages.slice(-spliceBound);
+    console.log(userMessages);
 
     let receiveDate = new Date();
+
+    let ongoingConversationString = userMessages.count == 0 ? `This is the ongoing conversation between ${self.name} and ${user.name}: ${JSON.stringify(userMessages)}.` : ``;
 
     // MESSAGE ANALYSIS
     let initialEmotionQuery = {
       role: "user",
-      content: `It is ${receiveDate}. This is the ongoing conversation between ${self.name} and ${user.name}: ${userMessages}. ${self.name}'s current activity is ${JSON.stringify(self.activity_status)}. ${self.name}'s current emotional state is ${JSON.stringify(self.emotional_status)}. ${self.name} currently has ${JSON.stringify(user.sentiment_status)} towards ${user.name}. ${user.name} just sent a new message to ${self.name}: ${msg.content}. This is ${self.name}'s personality: ${personalityString}. How would this new message alter ${self.name}'s emotional state? Provide the new object (whether any emotions' values changed or not), and the reason behind why. For each emotion property, the description property should be taken from the initial emotion object.`,
+      content: `${ongoingConversationString}. ${self.name}'s current activity is ${JSON.stringify(self.activity_status)}. These is ${self.name}'s personality traits: ${personalityString}. ${self.name}'s current emotional state is ${JSON.stringify(self.emotional_status)}. ${self.name} currently has ${JSON.stringify(user.sentiment_status)} towards ${user.name}. It is ${receiveDate.toISOString()}. ${user.name} just sent a message to ${self.name}: ${msg.content}. How would this alter ${self.name}'s emotional state? Provide the new object (regardless if any emotions' values changed or not), and the reason behind the reaction. For each emotion property, the description property should be taken from the initial emotion object.`,
     };
-
-    if (userMessages.count == 0) {
-      initialEmotionQuery = {
-        role: "user",
-        content: `It is ${receiveDate}. ${self.name}'s current activity is ${JSON.stringify(self.activity_status)}. ${self.name}'s current emotional state is ${JSON.stringify(self.emotional_status)}. ${self.name} currently has ${JSON.stringify(user.sentiment_status)} towards ${user.name}. ${user.name} just sent new message to ${self.name}: ${msg.content}. This is ${self.name}'s personality: ${personalityString}. How would this new message alter ${self.name}'s emotional state? Provide the new object (whether any emotions' values changed or not), and the reason behind why. For each emotion property, the description property should be taken from the initial emotion object.`,
-      };
-    }
 
     let innerDialogue = [initialEmotionQuery];
 
+    console.log("INITIAL EMOTIONAL RESPONSE");
     const initialEmotionQueryResponse =
       await getStructuredInnerDialogueResponse(
         innerDialogue,
@@ -1203,18 +1176,39 @@ module.exports = async (client, msg) => {
       ...initialEmotionQueryResponse,
     });
 
+    // RECEIVED PROCESSING
+    let messageReceivedQuery = {
+      role: "user",
+      content: `Given their personality, emotional state, and sentiments toward ${user.name}, how would ${self.name} interpret the purpose and tone of ${user.name}'s message? Provide the message, purpose, and tone in a JSON object.`,
+    };
+
+    innerDialogue.push(messageReceivedQuery);
+
+    console.log("MESSAGE RECEIVED INTERPRETATION");
+    const messageReceivedQueryResponse =
+      await getStructuredInnerDialogueResponse(
+        innerDialogue,
+        getMessageSchema()
+      );
+
+    innerDialogue.push({
+      role: "assistant",
+      content: `${JSON.stringify(messageReceivedQueryResponse)}`,
+    });
+
+    if (!messageReceivedQueryResponse) {
+      msg.reply("Error generating response");
+    }
+
     // RESPONSE CRAFTING
     let messageResponseQuery = {
       role: "user",
-      content: `What would ${self.name} want their response to convey, and with what tone? Given this information, construct their message response. They speak, type, and use punctuation in a way that aligns with their personality. Respond with the following JSON object: {
-	message: "",
-	purpose: "",
-	tone: ""
-} Provide the message, purpose, and tone.`,
+      content: `How would ${self.name} respond, and with what purpose and tone? They speak, type, and use punctuation in a way that aligns with their personality traits. Given this information, provide the message, purpose, and tone in a JSON object.`,
     };
 
     innerDialogue.push(messageResponseQuery);
 
+    console.log("MESSAGE RESPONSE");
     const messageResponseQueryResponse =
       await getStructuredInnerDialogueResponse(
         innerDialogue,
@@ -1230,20 +1224,9 @@ module.exports = async (client, msg) => {
       msg.reply("Error generating response");
     }
 
-    let incomingMessage = new Messages({
-      message: msg.content,
-      purpose: "unknown",
-      tone: "unknown",
-      timestamp: receiveDate,
-      is_bot: false,
-    });
+    
 
-    let messageResponse = new Messages({
-      ...messageResponseQueryResponse,
-      is_bot: true,
-    });
-
-    userConversation.messages.push(incomingMessage, messageResponse);
+   
 
     // REFLECTION
     let finalEmotionQuery = {
@@ -1253,6 +1236,7 @@ module.exports = async (client, msg) => {
 
     innerDialogue.push(finalEmotionQuery);
 
+    console.log("FINAL EMOTIONAL RESPONSE");
     const finalEmotionQueryResponse = await getStructuredInnerDialogueResponse(
       innerDialogue,
       getEmotionStatusSchema()
@@ -1278,6 +1262,7 @@ module.exports = async (client, msg) => {
 
     innerDialogue.push(sentimentQuery);
 
+    console.log("SENTIMENT CHANGES");
     const sentimentQueryResponse = await getStructuredInnerDialogueResponse(
       innerDialogue,
       getSentimentStatusSchema()
@@ -1296,6 +1281,21 @@ module.exports = async (client, msg) => {
       ...sentimentQueryResponse,
     });
 
+    let incomingMessage = new Messages({
+      ...messageReceivedQueryResponse,
+      timestamp: receiveDate,
+      is_bot: false,
+    });
+
+    let responseDate = new Date();
+    let messageResponse = new Messages({
+      ...messageResponseQueryResponse,
+      timestamp: responseDate,
+      is_bot: true,
+    });
+
+    userConversation.messages.push(incomingMessage, messageResponse);
+
     await Promise.all([self.save(), user.save(), userConversation.save()]);
     msg.reply(messageResponseQueryResponse.message);
   }
@@ -1309,7 +1309,7 @@ module.exports = async (client, msg) => {
       });
       console.log("---");
       console.log(
-        JSON.stringify(JSON.parse(response.data.choices[0].message.content))
+        JSON.stringify(JSON.parse(response.data.choices[0].message.content) + "\n")
       );
 
       const parsed = JSON.parse(
