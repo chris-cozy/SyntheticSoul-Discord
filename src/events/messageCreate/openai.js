@@ -31,8 +31,6 @@ module.exports = async (client, msg) => {
     return;
   }
 
-  await msg.channel.sendTyping();
-
   const getEmotionStatusSchema = () => ({
     type: "json_schema",
     json_schema: {
@@ -1201,6 +1199,9 @@ module.exports = async (client, msg) => {
     }
 
     // RESPONSE CRAFTING
+
+    await msg.channel.sendTyping();
+    
     let messageResponseQuery = {
       role: "user",
       content: `How would ${self.name} respond, and with what purpose and tone? They speak, type, and use punctuation in a way that aligns with their personality traits. Given this information, provide the message, purpose, and tone in a JSON object.`,
