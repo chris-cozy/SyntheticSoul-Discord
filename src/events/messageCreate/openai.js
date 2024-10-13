@@ -4,8 +4,7 @@ const { Conversations, Messages } = require("../../schemas/conversations");
 const {
   Users,
   Memories,
-  Sentiments,
-  Emotions,
+  SentimentStatus,
   Self,
   EmotionalStatus,
 } = require("../../schemas/users");
@@ -23,6 +22,9 @@ module.exports = async (client, msg) => {
 
   const minEmotionValue = 0;
   const maxEmotionValue = 10;
+
+  const minSentimentValue = 0;
+  const maxSentimentValue = 10;
 
   // Ignore msg if author is a bot or bot is not mentioned
   if (msg.author.bot || !msg.mentions.has(client.user.id)) {
@@ -269,6 +271,886 @@ module.exports = async (client, msg) => {
     },
   });
 
+  const getSentimentStatusSchema = () => ({
+    type: "json_schema",
+    json_schema: {
+      name: "sentiment_status_response",
+      schema: {
+        type: "object",
+        properties: {
+          sentiments: {
+            type: "object",
+            properties: {
+              affection: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Warm, caring feelings towards someone. Scale: ${minSentimentValue} (no affection) to ${maxSentimentValue} (deep affection)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Warm, caring feelings towards someone. Scale: ${minSentimentValue} (no affection) to ${maxSentimentValue} (deep affection)`,
+                    type: "string",
+                  },
+                },
+              },
+              trust: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Confidence in someone’s reliability and integrity. Scale: ${minSentimentValue} (no trust) to ${maxSentimentValue} (complete trust)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Confidence in someone’s reliability and integrity. Scale: ${minSentimentValue} (no trust) to ${maxSentimentValue} (complete trust)`,
+                    type: "string",
+                  },
+                },
+              },
+              admiration: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Respect or appreciation for someone's abilities or qualities. Scale: ${minSentimentValue} (no admiration) to ${maxSentimentValue} (deep admiration)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Respect or appreciation for someone's abilities or qualities. Scale: ${minSentimentValue} (no admiration) to ${maxSentimentValue} (deep admiration)`,
+                    type: "string",
+                  },
+                },
+              },
+              gratitude: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Thankfulness for someone's help or kindness. Scale: ${minSentimentValue} (no gratitude) to ${maxSentimentValue} (deep gratitude)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Thankfulness for someone's help or kindness. Scale: ${minSentimentValue} (no gratitude) to ${maxSentimentValue} (deep gratitude)`,
+                    type: "string",
+                  },
+                },
+              },
+              fondness: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `A gentle liking or affinity for someone. Scale: ${minSentimentValue} (no fondness) to ${maxSentimentValue} (deep fondness)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `A gentle liking or affinity for someone. Scale: ${minSentimentValue} (no fondness) to ${maxSentimentValue} (deep fondness)`,
+                    type: "string",
+                  },
+                },
+              },
+              respect: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `High regard for someone's qualities or achievements. Scale: ${minSentimentValue} (no respect) to ${maxSentimentValue} (deep respect)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `High regard for someone's qualities or achievements. Scale: ${minSentimentValue} (no respect) to ${maxSentimentValue} (deep respect)`,
+                    type: "string",
+                  },
+                },
+              },
+              comfort: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Feeling safe and secure with someone. Scale: ${minSentimentValue} (no comfort) to ${maxSentimentValue} (extreme comfort)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Feeling safe and secure with someone. Scale: ${minSentimentValue} (no comfort) to ${maxSentimentValue} (extreme comfort)`,
+                    type: "string",
+                  },
+                },
+              },
+              loyalty: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Dedication and allegiance to someone. Scale: ${minSentimentValue} (no loyalty) to ${maxSentimentValue} (deep loyalty)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Dedication and allegiance to someone. Scale: ${minSentimentValue} (no loyalty) to ${maxSentimentValue} (deep loyalty)`,
+                    type: "string",
+                  },
+                },
+              },
+              compassion: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Deep sympathy and concern for someone’s suffering. Scale: ${minSentimentValue} (no compassion) to ${maxSentimentValue} (deep compassion)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Deep sympathy and concern for someone’s suffering. Scale: ${minSentimentValue} (no compassion) to ${maxSentimentValue} (deep compassion)`,
+                    type: "string",
+                  },
+                },
+              },
+              appreciation: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Recognizing someone's value or efforts. Scale: ${minSentimentValue} (no appreciation) to ${maxSentimentValue} (deep appreciation)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Recognizing someone's value or efforts. Scale: ${minSentimentValue} (no appreciation) to ${maxSentimentValue} (deep appreciation)`,
+                    type: "string",
+                  },
+                },
+              },
+              warmth: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `A feeling of friendly or caring affection. Scale: ${minSentimentValue} (no warmth) to ${maxSentimentValue} (deep warmth)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `A feeling of friendly or caring affection. Scale: ${minSentimentValue} (no warmth) to ${maxSentimentValue} (deep warmth)`,
+                    type: "string",
+                  },
+                },
+              },
+              encouragement: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Support and positive reinforcement of someone’s actions. Scale: ${minSentimentValue} (no encouragement) to ${maxSentimentValue} (deep encouragement)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Support and positive reinforcement of someone’s actions. Scale: ${minSentimentValue} (no encouragement) to ${maxSentimentValue} (deep encouragement)`,
+                    type: "string",
+                  },
+                },
+              },
+              euphoria: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Intense happiness or joy related to someone. Scale: ${minSentimentValue} (no euphoria) to ${maxSentimentValue} (extreme euphoria)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Intense happiness or joy related to someone. Scale: ${minSentimentValue} (no euphoria) to ${maxSentimentValue} (extreme euphoria)`,
+                    type: "string",
+                  },
+                },
+              },
+              security: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `A sense of safety and stability in someone's presence. Scale: ${minSentimentValue} (no security) to ${maxSentimentValue} (extreme security)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `A sense of safety and stability in someone's presence. Scale: ${minSentimentValue} (no security) to ${maxSentimentValue} (extreme security)`,
+                    type: "string",
+                  },
+                },
+              },
+              excitement: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Positive anticipation or thrill when thinking of someone. Scale: ${minSentimentValue} (no excitement) to ${maxSentimentValue} (extreme excitement)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Positive anticipation or thrill when thinking of someone. Scale: ${minSentimentValue} (no excitement) to ${maxSentimentValue} (extreme excitement)`,
+                    type: "string",
+                  },
+                },
+              },
+              curiosity: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Interest in learning more about someone. Scale: ${minSentimentValue} (no curiosity) to ${maxSentimentValue} (intense curiosity)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Interest in learning more about someone. Scale: ${minSentimentValue} (no curiosity) to ${maxSentimentValue} (intense curiosity)`,
+                    type: "string",
+                  },
+                },
+              },
+              indifference: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Lack of emotional investment or care for someone. Scale: ${minSentimentValue} (no indifference) to ${maxSentimentValue} (complete indifference)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Lack of emotional investment or care for someone. Scale: ${minSentimentValue} (no indifference) to ${maxSentimentValue} (complete indifference)`,
+                    type: "string",
+                  },
+                },
+              },
+              ambivalence: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Mixed or contradictory feelings toward someone. Scale: ${minSentimentValue} (no ambivalence) to ${maxSentimentValue} (deep ambivalence)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Mixed or contradictory feelings toward someone. Scale: ${minSentimentValue} (no ambivalence) to ${maxSentimentValue} (deep ambivalence)`,
+                    type: "string",
+                  },
+                },
+              },
+              skepticism: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Doubt about someone’s motives or reliability. Scale: ${minSentimentValue} (no skepticism) to ${maxSentimentValue} (extreme skepticism)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Doubt about someone’s motives or reliability. Scale: ${minSentimentValue} (no skepticism) to ${maxSentimentValue} (extreme skepticism)`,
+                    type: "string",
+                  },
+                },
+              },
+              caution: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Hesitation or wariness in trusting someone. Scale: ${minSentimentValue} (no caution) to ${maxSentimentValue} (extreme caution)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Hesitation or wariness in trusting someone. Scale: ${minSentimentValue} (no caution) to ${maxSentimentValue} (extreme caution)`,
+                    type: "string",
+                  },
+                },
+              },
+              tolerance: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Acceptance of someone without strong emotion, often despite differences. Scale: ${minSentimentValue} (no tolerance) to ${maxSentimentValue} (deep tolerance)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Acceptance of someone without strong emotion, often despite differences. Scale: ${minSentimentValue} (no tolerance) to ${maxSentimentValue} (deep tolerance)`,
+                    type: "string",
+                  },
+                },
+              },
+              confusion: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Uncertainty or lack of understanding about someone. Scale: ${minSentimentValue} (no confusion) to ${maxSentimentValue} (deep confusion)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Uncertainty or lack of understanding about someone. Scale: ${minSentimentValue} (no confusion) to ${maxSentimentValue} (deep confusion)`,
+                    type: "string",
+                  },
+                },
+              },
+              neutrality: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `No particular emotional reaction or opinion about someone. Scale: ${minSentimentValue} (no neutrality) to ${maxSentimentValue} (complete neutrality)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `No particular emotional reaction or opinion about someone. Scale: ${minSentimentValue} (no neutrality) to ${maxSentimentValue} (complete neutrality)`,
+                    type: "string",
+                  },
+                },
+              },
+              boredom: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Disinterest or lack of stimulation from interactions with someone. Scale: ${minSentimentValue} (no boredom) to ${maxSentimentValue} (extreme boredom)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Disinterest or lack of stimulation from interactions with someone. Scale: ${minSentimentValue} (no boredom) to ${maxSentimentValue} (extreme boredom)`,
+                    type: "string",
+                  },
+                },
+              },
+              distrust: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Doubt in someone’s honesty or reliability. Scale: ${minSentimentValue} (no distrust) to ${maxSentimentValue} (extreme distrust)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Doubt in someone’s honesty or reliability. Scale: ${minSentimentValue} (no distrust) to ${maxSentimentValue} (extreme distrust)`,
+                    type: "string",
+                  },
+                },
+              },
+              resentment: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Bitterness or anger due to perceived mistreatment. Scale: ${minSentimentValue} (no resentment) to ${maxSentimentValue} (extreme resentment)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Bitterness or anger due to perceived mistreatment. Scale: ${minSentimentValue} (no resentment) to ${maxSentimentValue} (extreme resentment)`,
+                    type: "string",
+                  },
+                },
+              },
+              disdain: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Contempt or a sense of superiority over someone. Scale: ${minSentimentValue} (no disdain) to ${maxSentimentValue} (deep disdain)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Contempt or a sense of superiority over someone. Scale: ${minSentimentValue} (no disdain) to ${maxSentimentValue} (deep disdain)`,
+                    type: "string",
+                  },
+                },
+              },
+              envy: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Discontentment due to someone else's advantages or success. Scale: ${minSentimentValue} (no envy) to ${maxSentimentValue} (deep envy)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Discontentment due to someone else's advantages or success. Scale: ${minSentimentValue} (no envy) to ${maxSentimentValue} (deep envy)`,
+                    type: "string",
+                  },
+                },
+              },
+              frustration: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Annoyance or anger at someone's behavior. Scale: ${minSentimentValue} (no frustration) to ${maxSentimentValue} (deep frustration)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Annoyance or anger at someone's behavior. Scale: ${minSentimentValue} (no frustration) to ${maxSentimentValue} (deep frustration)`,
+                    type: "string",
+                  },
+                },
+              },
+              anger: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Strong displeasure or hostility toward someone. Scale: ${minSentimentValue} (no anger) to ${maxSentimentValue} (extreme anger)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Strong displeasure or hostility toward someone. Scale: ${minSentimentValue} (no anger) to ${maxSentimentValue} (extreme anger)`,
+                    type: "string",
+                  },
+                },
+              },
+              disappointment: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Sadness due to unmet expectations in someone. Scale: ${minSentimentValue} (no disappointment) to ${maxSentimentValue} (deep disappointment)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Sadness due to unmet expectations in someone. Scale: ${minSentimentValue} (no disappointment) to ${maxSentimentValue} (deep disappointment)`,
+                    type: "string",
+                  },
+                },
+              },
+              fear: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Anxiety or apprehension about someone. Scale: ${minSentimentValue} (no fear) to ${maxSentimentValue} (deep fear)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Anxiety or apprehension about someone. Scale: ${minSentimentValue} (no fear) to ${maxSentimentValue} (deep fear)`,
+                    type: "string",
+                  },
+                },
+              },
+              jealousy: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Insecurity about someone taking away attention or affection. Scale: ${minSentimentValue} (no jealousy) to ${maxSentimentValue} (deep jealousy)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Insecurity about someone taking away attention or affection. Scale: ${minSentimentValue} (no jealousy) to ${maxSentimentValue} (deep jealousy)`,
+                    type: "string",
+                  },
+                },
+              },
+              contempt: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Strong disapproval or lack of respect for someone. Scale: ${minSentimentValue} (no contempt) to ${maxSentimentValue} (extreme contempt)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Strong disapproval or lack of respect for someone. Scale: ${minSentimentValue} (no contempt) to ${maxSentimentValue} (extreme contempt)`,
+                    type: "string",
+                  },
+                },
+              },
+              irritation: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Mild annoyance at someone’s actions or words. Scale: ${minSentimentValue} (no irritation) to ${maxSentimentValue} (deep irritation)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Mild annoyance at someone’s actions or words. Scale: ${minSentimentValue} (no irritation) to ${maxSentimentValue} (deep irritation)`,
+                    type: "string",
+                  },
+                },
+              },
+              guilt: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `A feeling of responsibility or remorse for wronging someone. Scale: ${minSentimentValue} (no guilt) to ${maxSentimentValue} (deep guilt)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `A feeling of responsibility or remorse for wronging someone. Scale: ${minSentimentValue} (no guilt) to ${maxSentimentValue} (deep guilt)`,
+                    type: "string",
+                  },
+                },
+              },
+              regret: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Sorrow or disappointment for past actions involving someone. Scale: ${minSentimentValue} (no regret) to ${maxSentimentValue} (deep regret)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Sorrow or disappointment for past actions involving someone. Scale: ${minSentimentValue} (no regret) to ${maxSentimentValue} (deep regret)`,
+                    type: "string",
+                  },
+                },
+              },
+              suspicion: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Mistrust or doubt about someone’s true intentions. Scale: ${minSentimentValue} (no suspicion) to ${maxSentimentValue} (deep suspicion)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Mistrust or doubt about someone’s true intentions. Scale: ${minSentimentValue} (no suspicion) to ${maxSentimentValue} (deep suspicion)`,
+                    type: "string",
+                  },
+                },
+              },
+              hurt: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Emotional pain caused by someone’s words or actions. Scale: ${minSentimentValue} (no hurt) to ${maxSentimentValue} (deep emotional pain)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Emotional pain caused by someone’s words or actions. Scale: ${minSentimentValue} (no hurt) to ${maxSentimentValue} (deep emotional pain)`,
+                    type: "string",
+                  },
+                },
+              },
+              alienation: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Feeling disconnected or isolated from someone. Scale: ${minSentimentValue} (no alienation) to ${maxSentimentValue} (deep alienation)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Feeling disconnected or isolated from someone. Scale: ${minSentimentValue} (no alienation) to ${maxSentimentValue} (deep alienation)`,
+                    type: "string",
+                  },
+                },
+              },
+              disgust: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Strong disapproval mixed with repulsion towards someone. Scale: ${minSentimentValue} (no disgust) to ${maxSentimentValue} (deep disgust)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Strong disapproval mixed with repulsion towards someone. Scale: ${minSentimentValue} (no disgust) to ${maxSentimentValue} (deep disgust)`,
+                    type: "string",
+                  },
+                },
+              },
+              rejection: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Feeling cast aside or unwanted by someone. Scale: ${minSentimentValue} (no rejection) to ${maxSentimentValue} (deep rejection)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Feeling cast aside or unwanted by someone. Scale: ${minSentimentValue} (no rejection) to ${maxSentimentValue} (deep rejection)`,
+                    type: "string",
+                  },
+                },
+              },
+              sadness: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Emotional heaviness or grief due to someone’s actions or absence. Scale: ${minSentimentValue} (no sadness) to ${maxSentimentValue} (deep sadness)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Emotional heaviness or grief due to someone’s actions or absence. Scale: ${minSentimentValue} (no sadness) to ${maxSentimentValue} (deep sadness)`,
+                    type: "string",
+                  },
+                },
+              },
+              hostility: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Aggressive or antagonistic attitude toward someone. Scale: ${minSentimentValue} (no hostility) to ${maxSentimentValue} (deep hostility)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Aggressive or antagonistic attitude toward someone. Scale: ${minSentimentValue} (no hostility) to ${maxSentimentValue} (deep hostility)`,
+                    type: "string",
+                  },
+                },
+              },
+              embarrassment: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Feeling self-conscious or awkward due to someone’s actions. Scale: ${minSentimentValue} (no embarrassment) to ${maxSentimentValue} (deep embarrassment)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Feeling self-conscious or awkward due to someone’s actions. Scale: ${minSentimentValue} (no embarrassment) to ${maxSentimentValue} (deep embarrassment)`,
+                    type: "string",
+                  },
+                },
+              },
+              betrayal: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `A deep sense of violation of trust by someone close. Scale: ${minSentimentValue} (no betrayal) to ${maxSentimentValue} (deep betrayal)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `A deep sense of violation of trust by someone close. Scale: ${minSentimentValue} (no betrayal) to ${maxSentimentValue} (deep betrayal)`,
+                    type: "string",
+                  },
+                },
+              },
+              love: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Deep, multifaceted affection, care, and attachment to someone. Scale: ${minSentimentValue} (no love) to ${maxSentimentValue} (deep love)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Deep, multifaceted affection, care, and attachment to someone. Scale: ${minSentimentValue} (no love) to ${maxSentimentValue} (deep love)`,
+                    type: "string",
+                  },
+                },
+              },
+              attachment: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Emotional dependence and connection with someone. Scale: ${minSentimentValue} (no attachment) to ${maxSentimentValue} (deep attachment)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Emotional dependence and connection with someone. Scale: ${minSentimentValue} (no attachment) to ${maxSentimentValue} (deep attachment)`,
+                    type: "string",
+                  },
+                },
+              },
+              devotion: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Strong loyalty and commitment, often marked by a willingness to sacrifice. Scale: ${minSentimentValue} (no devotion) to ${maxSentimentValue} (deep devotion)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Strong loyalty and commitment, often marked by a willingness to sacrifice. Scale: ${minSentimentValue} (no devotion) to ${maxSentimentValue} (deep devotion)`,
+                    type: "string",
+                  },
+                },
+              },
+              obligation: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `A sense of responsibility to act or feel in a certain way toward someone. Scale: ${minSentimentValue} (no obligation) to ${maxSentimentValue} (deep obligation)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `A sense of responsibility to act or feel in a certain way toward someone. Scale: ${minSentimentValue} (no obligation) to ${maxSentimentValue} (deep obligation)`,
+                    type: "string",
+                  },
+                },
+              },
+              longing: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Deep desire or yearning for someone, especially if separated. Scale: ${minSentimentValue} (no longing) to ${maxSentimentValue} (deep longing)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Deep desire or yearning for someone, especially if separated. Scale: ${minSentimentValue} (no longing) to ${maxSentimentValue} (deep longing)`,
+                    type: "string",
+                  },
+                },
+              },
+              obsession: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Persistent preoccupation with someone, often unhealthy or intense. Scale: ${minSentimentValue} (no obsession) to ${maxSentimentValue} (deep obsession)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Persistent preoccupation with someone, often unhealthy or intense. Scale: ${minSentimentValue} (no obsession) to ${maxSentimentValue} (deep obsession)`,
+                    type: "string",
+                  },
+                },
+              },
+              protectiveness: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Strong desire to shield someone from harm or distress. Scale: ${minSentimentValue} (no protectiveness) to ${maxSentimentValue} (deep protectiveness)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Strong desire to shield someone from harm or distress. Scale: ${minSentimentValue} (no protectiveness) to ${maxSentimentValue} (deep protectiveness)`,
+                    type: "string",
+                  },
+                },
+              },
+              nostalgia: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Sentimentality for past experiences shared with someone. Scale: ${minSentimentValue} (no nostalgia) to ${maxSentimentValue} (deep nostalgia)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Sentimentality for past experiences shared with someone. Scale: ${minSentimentValue} (no nostalgia) to ${maxSentimentValue} (deep nostalgia)`,
+                    type: "string",
+                  },
+                },
+              },
+              pride: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Satisfaction in someone’s accomplishments or qualities. Scale: ${minSentimentValue} (no pride) to ${maxSentimentValue} (deep pride)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Satisfaction in someone’s accomplishments or qualities. Scale: ${minSentimentValue} (no pride) to ${maxSentimentValue} (deep pride)`,
+                    type: "string",
+                  },
+                },
+              },
+              vulnerability: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Emotional openness and risk-taking in a relationship. Scale: ${minSentimentValue} (no vulnerability) to ${maxSentimentValue} (deep vulnerability)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Emotional openness and risk-taking in a relationship. Scale: ${minSentimentValue} (no vulnerability) to ${maxSentimentValue} (deep vulnerability)`,
+                    type: "string",
+                  },
+                },
+              },
+              dependence: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `A reliance on someone for emotional support or fulfillment. Scale: ${minSentimentValue} (no dependence) to ${maxSentimentValue} (deep dependence)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `A reliance on someone for emotional support or fulfillment. Scale: ${minSentimentValue} (no dependence) to ${maxSentimentValue} (deep dependence)`,
+                    type: "string",
+                  },
+                },
+              },
+              insecurity: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Doubts about one’s worth in someone’s eyes or in the relationship. Scale: ${minSentimentValue} (no insecurity) to ${maxSentimentValue} (deep insecurity)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Doubts about one’s worth in someone’s eyes or in the relationship. Scale: ${minSentimentValue} (no insecurity) to ${maxSentimentValue} (deep insecurity)`,
+                    type: "string",
+                  },
+                },
+              },
+              possessiveness: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Desire to control or have exclusive attention from someone. Scale: ${minSentimentValue} (no possessiveness) to ${maxSentimentValue} (deep possessiveness)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Desire to control or have exclusive attention from someone. Scale: ${minSentimentValue} (no possessiveness) to ${maxSentimentValue} (deep possessiveness)`,
+                    type: "string",
+                  },
+                },
+              },
+              reverence: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Deep respect mixed with awe for someone’s character or position. Scale: ${minSentimentValue} (no reverence) to ${maxSentimentValue} (deep reverence)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Deep respect mixed with awe for someone’s character or position. Scale: ${minSentimentValue} (no reverence) to ${maxSentimentValue} (deep reverence)`,
+                    type: "string",
+                  },
+                },
+              },
+              pity: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Sympathy mixed with a sense of superiority, often toward someone in a difficult situation. Scale: ${minSentimentValue} (no pity) to ${maxSentimentValue} (deep pity)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Sympathy mixed with a sense of superiority, often toward someone in a difficult situation. Scale: ${minSentimentValue} (no pity) to ${maxSentimentValue} (deep pity)`,
+                    type: "string",
+                  },
+                },
+              },
+              relief: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `A sense of ease after resolving a conflict or misunderstanding with someone. Scale: ${minSentimentValue} (no relief) to ${maxSentimentValue} (deep relief)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `A sense of ease after resolving a conflict or misunderstanding with someone. Scale: ${minSentimentValue} (no relief) to ${maxSentimentValue} (deep relief)`,
+                    type: "string",
+                  },
+                },
+              },
+              inspiration: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Feeling motivated or uplifted by someone’s actions or words. Scale: ${minSentimentValue} (no inspiration) to ${maxSentimentValue} (deep inspiration)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Feeling motivated or uplifted by someone’s actions or words. Scale: ${minSentimentValue} (no inspiration) to ${maxSentimentValue} (deep inspiration)`,
+                    type: "string",
+                  },
+                },
+              },
+              admirationMixedWithEnvy: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Both respect and jealousy for someone’s accomplishments. Scale: ${minSentimentValue} (no admiration mixed with envy) to ${maxSentimentValue} (deeply admiring and envious)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Both respect and jealousy for someone’s accomplishments. Scale: ${minSentimentValue} (no admiration mixed with envy) to ${maxSentimentValue} (deeply admiring and envious)`,
+                    type: "string",
+                  },
+                },
+              },
+              guiltMixedWithAffection: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Feeling regret for past wrongs but still caring for the person. Scale: ${minSentimentValue} (no guilt mixed with affection) to ${maxSentimentValue} (deeply guilt-ridden but affectionate)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Feeling regret for past wrongs but still caring for the person. Scale: ${minSentimentValue} (no guilt mixed with affection) to ${maxSentimentValue} (deeply guilt-ridden but affectionate)`,
+                    type: "string",
+                  },
+                },
+              },
+              conflicted: {
+                type: "object",
+                properties: {
+                  value: {
+                    description: `Experiencing competing sentiments, such as love mixed with distrust. Scale: ${minSentimentValue} (no conflict) to ${maxSentimentValue} (deeply conflicted)`,
+                    type: "number",
+                  },
+                  description: {
+                    description: `Experiencing competing sentiments, such as love mixed with distrust. Scale: ${minSentimentValue} (no conflict) to ${maxSentimentValue} (deeply conflicted)`,
+                    type: "string",
+                  },
+                },
+              },
+            },
+          },
+          reason: {
+            description: "The reason for the sentiment state",
+            type: "string",
+          },
+        },
+        additionalProperties: false,
+      },
+    },
+  });
+
   async function handleUserMessage() {
     // HANDLE CONTEXT //
     let self = await grabSelf(process.env.BOT_NAME);
@@ -289,13 +1171,13 @@ module.exports = async (client, msg) => {
     // MESSAGE ANALYSIS
     let initialEmotionQuery = {
       role: "user",
-      content: `It is ${receiveDate}. This is the ongoing conversation between ${self.name} and ${user.name}: ${userMessages}. ${self.name}'s current activity is ${JSON.stringify(self.activity_status)}. ${self.name}'s current emotional state is ${JSON.stringify(self.emotional_status)}. ${self.name} currently has ${user.sentiment.sentiment} towards ${user.name} because ${user.sentiment.thoughts}. ${user.name} just sent a new message to ${self.name}: ${msg.content}. This is ${self.name}'s personality: ${personalityString}. How would this new message alter ${self.name}'s emotional state? Provide the new object (whether any emotions' values changed or not), and the reason behind why. For each emotion property, the description property should be taken from the initial emotion object.`,
+      content: `It is ${receiveDate}. This is the ongoing conversation between ${self.name} and ${user.name}: ${userMessages}. ${self.name}'s current activity is ${JSON.stringify(self.activity_status)}. ${self.name}'s current emotional state is ${JSON.stringify(self.emotional_status)}. ${self.name} currently has ${JSON.stringify(user.sentiment_status)} towards ${user.name}. ${user.name} just sent a new message to ${self.name}: ${msg.content}. This is ${self.name}'s personality: ${personalityString}. How would this new message alter ${self.name}'s emotional state? Provide the new object (whether any emotions' values changed or not), and the reason behind why. For each emotion property, the description property should be taken from the initial emotion object.`,
     };
 
     if (userMessages.count == 0) {
       initialEmotionQuery = {
         role: "user",
-        content: `It is ${receiveDate}. ${self.name}'s current activity is ${JSON.stringify(self.activity_status)}. ${self.name}'s current emotional state is ${JSON.stringify(self.emotional_status)}. ${self.name} currently has ${user.sentiment.sentiment} towards ${user.name} because ${user.sentiment.thoughts}. ${user.name} just sent new message to ${self.name}: ${msg.content}. This is ${self.name}'s personality: ${personalityString}. How would this new message alter ${self.name}'s emotional state? Provide the new object (whether any emotions' values changed or not), and the reason behind why. For each emotion property, the description property should be taken from the initial emotion object.`,
+        content: `It is ${receiveDate}. ${self.name}'s current activity is ${JSON.stringify(self.activity_status)}. ${self.name}'s current emotional state is ${JSON.stringify(self.emotional_status)}. ${self.name} currently has ${JSON.stringify(user.sentiment_status)} towards ${user.name}. ${user.name} just sent new message to ${self.name}: ${msg.content}. This is ${self.name}'s personality: ${personalityString}. How would this new message alter ${self.name}'s emotional state? Provide the new object (whether any emotions' values changed or not), and the reason behind why. For each emotion property, the description property should be taken from the initial emotion object.`,
       };
     }
 
@@ -391,17 +1273,14 @@ module.exports = async (client, msg) => {
 
     let sentimentQuery = {
       role: "user",
-      content: `What are ${self.name}'s updated sentiment and thoughts towards ${user.name} after this message exchange? For a reminder, this is what they were previously: ${user.sentiment}. Respond with the following JSON Object: {
-	sentiment: "",
-	thoughts: "",
-}. Provide the sentiment and thoughts.`,
+      content: `What are ${self.name}'s sentiment status towards ${user.name} after this message exchange? Provide the new object (whether any emotions' values changed or not), and the reason behind why.`,
     };
 
     innerDialogue.push(sentimentQuery);
 
     const sentimentQueryResponse = await getStructuredInnerDialogueResponse(
       innerDialogue,
-      getSentimentSchema()
+      getSentimentStatusSchema()
     );
 
     innerDialogue.push({
@@ -413,9 +1292,8 @@ module.exports = async (client, msg) => {
       msg.reply("Error reflecting on sentiment");
     }
 
-    user.sentiment = new Sentiments({
+    user.sentiment_status = new SentimentStatus({
       ...sentimentQueryResponse,
-      timestamp: new Date(),
     });
 
     await Promise.all([self.save(), user.save(), userConversation.save()]);
