@@ -1148,7 +1148,7 @@ module.exports = async (client, msg) => {
     // MESSAGE ANALYSIS
     let initialEmotionQuery = {
       role: "user",
-      content: `${ongoingConversationString}. ${self.name}'s current activity is ${JSON.stringify(self.activity_status)}. These is ${self.name}'s personality traits: ${personalityString}. ${self.name}'s current emotional state is ${JSON.stringify(self.emotional_status)}. ${self.name} currently has ${JSON.stringify(user.sentiment_status)} towards ${user.name}. It is ${receiveDate.toISOString()}. ${user.name} just sent a message to ${self.name}: ${msg.content}. How would this alter ${self.name}'s emotional state? Provide the new object (regardless if any emotions' values changed or not), and the reason behind the reaction. For each emotion property, the description property should be taken from the initial emotion object.`,
+      content: `${ongoingConversationString}. ${self.name}'s current activity is ${JSON.stringify(self.activity_status)}. These is ${self.name}'s personality traits: ${personalityString}. ${self.name}'s current emotional state is ${JSON.stringify(self.emotional_status)}. ${self.name} currently has ${JSON.stringify(user.sentiment_status)} towards ${user.name}. It is ${receiveDate.toISOString()}. ${user.name} just sent a message to ${self.name}: ${msg.content}. How would this alter ${self.name}'s emotional state? Provide the new object (regardless if any emotions' values changed or not), and the reason behind the current emotional state. For each emotion property, the description property should be taken from the initial emotion object.`,
     };
 
     let innerDialogue = [initialEmotionQuery];
@@ -1201,7 +1201,7 @@ module.exports = async (client, msg) => {
     // RESPONSE CRAFTING
 
     await msg.channel.sendTyping();
-    
+
     let messageResponseQuery = {
       role: "user",
       content: `How would ${self.name} respond, and with what purpose and tone? They speak, type, and use punctuation in a way that aligns with their personality traits. Given this information, provide the message, purpose, and tone in a JSON object.`,
@@ -1232,7 +1232,7 @@ module.exports = async (client, msg) => {
     // REFLECTION
     let finalEmotionQuery = {
       role: "user",
-      content: `What is ${self.name}'s emotional state after sending their response? Provide the new object (whether any emotions' values changed or not), and the reason behind why.`,
+      content: `What is ${self.name}'s emotional state after sending their response? Provide the new object (whether any emotions' values changed or not), and the reason behind the current emotional state.`,
     };
 
     innerDialogue.push(finalEmotionQuery);
@@ -1258,7 +1258,7 @@ module.exports = async (client, msg) => {
 
     let sentimentQuery = {
       role: "user",
-      content: `What are ${self.name}'s sentiment status towards ${user.name} after this message exchange? Provide the new object (whether any emotions' values changed or not), and the reason behind why.`,
+      content: `What are ${self.name}'s sentiment status towards ${user.name} after this message exchange? Provide the new object (whether any emotions' values changed or not), and the updated reason behind the current sentiment.`,
     };
 
     innerDialogue.push(sentimentQuery);
