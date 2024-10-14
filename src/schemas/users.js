@@ -1493,7 +1493,7 @@ const userSchema = new Schema({
   summary: {
     type: String,
     required: false,
-    default: "I don't know this person.",
+    default: "",
   },
   personality_modifier: {
     type: personalityModifierSchema,
