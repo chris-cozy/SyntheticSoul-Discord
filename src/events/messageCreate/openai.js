@@ -1165,7 +1165,7 @@ module.exports = async (client, msg) => {
 
     let ongoingConversationString =
       userMessages.length > 0
-        ? `This is the ongoing conversation between ${self.name} and ${
+        ? `This is what ${self.name} remembers of the ongoing conversation between them and ${
             user.name
           }: ${JSON.stringify(userMessages)}.`
         : `This is ${self.name}'s and ${
@@ -1178,7 +1178,7 @@ module.exports = async (client, msg) => {
     // MESSAGE ANALYSIS
     let initialEmotionQuery = {
       role: "user",
-      content: `${ongoingConversationString}. ${
+      content: `${
         self.name
       }'s current activity is ${JSON.stringify(
         self.activity_status
@@ -1186,7 +1186,7 @@ module.exports = async (client, msg) => {
         self.name
       }'s current emotional state is ${JSON.stringify(
         self.emotional_status
-      )}. This is what ${self.name} knows about ${user.name}: ${user.summary}. ${self.name} currently has ${JSON.stringify(
+      )}. ${ongoingConversationString}. This is what ${self.name} knows about ${user.name}: ${user.summary}. ${self.name} currently has ${JSON.stringify(
         user.sentiment_status
       )} towards ${user.name}. It is ${receiveDate.toISOString()}. ${
         user.name
