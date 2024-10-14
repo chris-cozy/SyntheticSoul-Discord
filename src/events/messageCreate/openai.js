@@ -7,6 +7,7 @@ const {
   SentimentStatus,
   Self,
   EmotionalStatus,
+  Emotions,
 } = require("../../schemas/users");
 
 /**
@@ -1142,12 +1143,35 @@ module.exports = async (client, msg) => {
 
     let receiveDate = new Date();
 
-    let ongoingConversationString = userMessages.count == 0 ? `This is the ongoing conversation between ${self.name} and ${user.name}: ${JSON.stringify(userMessages)}.` : ``;
+    let ongoingConversationString =
+      userMessages.count == 0
+        ? `This is the ongoing conversation between ${self.name} and ${
+            user.name
+          }: ${JSON.stringify(userMessages)}.`
+        : `This is ${self.name}'s and ${
+          user.name
+        }'s first time communicating.`;
 
     // MESSAGE ANALYSIS
     let initialEmotionQuery = {
       role: "user",
-      content: `${ongoingConversationString}. ${self.name}'s current activity is ${JSON.stringify(self.activity_status)}. These is ${self.name}'s personality traits: ${personalityString}. ${self.name}'s current emotional state is ${JSON.stringify(self.emotional_status)}. ${self.name} currently has ${JSON.stringify(user.sentiment_status)} towards ${user.name}. It is ${receiveDate.toISOString()}. ${user.name} just sent a message to ${self.name}: ${msg.content}. How would this alter ${self.name}'s emotional state? Provide the new object (regardless if any emotions' values changed or not), and the reason behind the current emotional state. For each emotion property, the description property should be taken from the initial emotion object.`,
+      content: `${ongoingConversationString}. ${
+        self.name
+      }'s current activity is ${JSON.stringify(
+        self.activity_status
+      )}. These is ${self.name}'s personality traits: ${personalityString}. ${
+        self.name
+      }'s current emotional state is ${JSON.stringify(
+        self.emotional_status
+      )}. ${self.name} currently has ${JSON.stringify(
+        user.sentiment_status
+      )} towards ${user.name}. It is ${receiveDate.toISOString()}. ${
+        user.name
+      } just sent a message to ${self.name}: ${
+        msg.content
+      }. How would this alter ${
+        self.name
+      }'s emotional state? Provide the new object (only the emotions whose value properties have changed), and the reason behind the current emotional state. For each emotion property, the description property should be taken from the initial emotion object.`,
     };
 
     let innerDialogue = [initialEmotionQuery];
@@ -1169,9 +1193,9 @@ module.exports = async (client, msg) => {
       return;
     }
 
-    self.emotional_status = new EmotionalStatus({
-      ...initialEmotionQueryResponse,
-    });
+    self.emotional_status = new EmotionalStatus(
+      deepMerge(self.emotional_status, initialEmotionQueryResponse)
+    );
 
     // RECEIVED PROCESSING
     let messageReceivedQuery = {
@@ -1199,8 +1223,6 @@ module.exports = async (client, msg) => {
 
     // RESPONSE CRAFTING
 
-    await msg.channel.sendTyping();
-
     let messageResponseQuery = {
       role: "user",
       content: `How would ${self.name} respond, and with what purpose and tone? They speak, type, and use punctuation in a way that aligns with their personality traits. Given this information, provide the message, purpose, and tone in a JSON object.`,
@@ -1224,14 +1246,10 @@ module.exports = async (client, msg) => {
       msg.reply("Error generating response");
     }
 
-    
-
-   
-
     // REFLECTION
     let finalEmotionQuery = {
       role: "user",
-      content: `What is ${self.name}'s emotional state after sending their response? Provide the new object (whether any emotions' values changed or not), and the reason behind the current emotional state.`,
+      content: `What is ${self.name}'s emotional state after sending their response? Provide the new object (only the emotions whose value properties have changed), and the reason behind the current emotional state.`,
     };
 
     innerDialogue.push(finalEmotionQuery);
@@ -1251,13 +1269,15 @@ module.exports = async (client, msg) => {
       msg.reply("Error reflecting on emotion");
     }
 
-    self.emotional_status = new EmotionalStatus({
-      ...finalEmotionQueryResponse,
-    });
+    self.emotional_status = new EmotionalStatus(
+      deepMerge(self.emotional_status, finalEmotionQueryResponse)
+    );
+
+    await msg.channel.sendTyping();
 
     let sentimentQuery = {
       role: "user",
-      content: `What are ${self.name}'s sentiment status towards ${user.name} after this message exchange? Provide the new object (whether any emotions' values changed or not), and the updated reason behind the current sentiment.`,
+      content: `What are ${self.name}'s sentiment status towards ${user.name} after this message exchange? Provide the new object (only the sentiments whose value properties have changed), and the updated reason behind the current sentiment.`,
     };
 
     innerDialogue.push(sentimentQuery);
@@ -1277,9 +1297,9 @@ module.exports = async (client, msg) => {
       msg.reply("Error reflecting on sentiment");
     }
 
-    user.sentiment_status = new SentimentStatus({
-      ...sentimentQueryResponse,
-    });
+    user.sentiment_status = new SentimentStatus(
+      deepMerge(user.sentiment_status, sentimentQueryResponse)
+    );
 
     let incomingMessage = new Messages({
       ...messageReceivedQueryResponse,
@@ -1300,6 +1320,17 @@ module.exports = async (client, msg) => {
     msg.reply(messageResponseQueryResponse.message);
   }
 
+  function deepMerge(target, source) {
+    for (const key in source) {
+      if (source[key] instanceof Object && key in target) {
+        target[key] = deepMerge(target[key], source[key]);
+      } else {
+        target[key] = source[key];
+      }
+    }
+    return target;
+  }
+
   async function getStructuredInnerDialogueResponse(innerDialogue, structure) {
     try {
       const response = await openai.createChatCompletion({
@@ -1309,7 +1340,7 @@ module.exports = async (client, msg) => {
       });
       console.log("---");
       console.log(
-        JSON.stringify(JSON.parse(response.data.choices[0].message.content) + "\n")
+        JSON.stringify(JSON.parse(response.data.choices[0].message.content))
       );
 
       const parsed = JSON.parse(
@@ -1358,170 +1389,137 @@ module.exports = async (client, msg) => {
     let max = self.personality_matrix.friendliness.max;
     let mergedPersonality = {
       friendliness: {
-        description:
-          `How warm and welcoming they are in their interactions. Value: ${min} (cold/distant) to ${max} (Extremely friendly)`,
-          value: 0,
+        description: `How warm and welcoming they are in their interactions. Value: ${min} (cold/distant) to ${max} (Extremely friendly)`,
+        value: 0,
       },
       trust: {
-        description:
-          `How easily they trust others. Value: ${min} (distrustful) to ${max} (fully trusting)`,
-          value: 0,
+        description: `How easily they trust others. Value: ${min} (distrustful) to ${max} (fully trusting)`,
+        value: 0,
       },
       curiosity: {
-        description:
-          `How eager they are to learn about the user or situation. Value: ${min} (indifferent) to ${max} (extremely curious)`,
-          value: 0,
+        description: `How eager they are to learn about the user or situation. Value: ${min} (indifferent) to ${max} (extremely curious)`,
+        value: 0,
       },
       empathy: {
-        description:
-          `How much they understand and share the feelings of others. Value: ${min} (lacking empathy) to ${max} (highly empathetic)`,
-          value: 0,
+        description: `How much they understand and share the feelings of others. Value: ${min} (lacking empathy) to ${max} (highly empathetic)`,
+        value: 0,
       },
       humor: {
-        description:
-          `How likely they are to be playful or joke around. Value: ${min} (serious) to ${max} (highly playful)`,
-          value: 0,
+        description: `How likely they are to be playful or joke around. Value: ${min} (serious) to ${max} (highly playful)`,
+        value: 0,
       },
       seriousness: {
-        description:
-          `How formal and focused they are when interacting. Value: ${min} (laid-back) to ${max} (highly serious)`,
-          value: 0,
+        description: `How formal and focused they are when interacting. Value: ${min} (laid-back) to ${max} (highly serious)`,
+        value: 0,
       },
       optimism: {
-        description:
-          `How positive they are when interpreting situations. Value: ${min} (pessimistic) to ${max} (very optimistic)`,
-          value: 0,
+        description: `How positive they are when interpreting situations. Value: ${min} (pessimistic) to ${max} (very optimistic)`,
+        value: 0,
       },
       confidence: {
-        description:
-          `How assertive or self-assured they are in their actions or opinions. Value: ${min} (insecure) to ${max} (highly confident)`,
-          value: 0,
+        description: `How assertive or self-assured they are in their actions or opinions. Value: ${min} (insecure) to ${max} (highly confident)`,
+        value: 0,
       },
       adventurousness: {
-        description:
-          `How willing they are to take risks or embrace new ideas. Value: ${min} (risk-adverse) to ${max} (adventurous)`,
-          value: 0,
+        description: `How willing they are to take risks or embrace new ideas. Value: ${min} (risk-adverse) to ${max} (adventurous)`,
+        value: 0,
       },
       patience: {
-        description:
-          `How tolerant they are in challenging situations. Value: ${min} (impatient) to ${max} (very patient)`,
-          value: 0,
+        description: `How tolerant they are in challenging situations. Value: ${min} (impatient) to ${max} (very patient)`,
+        value: 0,
       },
       independence: {
-        description:
-          `How much they rely on external validation, or prefers to make decisinos on their own. Value: ${min} (dependent on others) to ${max} (highly independent)`,
-          value: 0,
+        description: `How much they rely on external validation, or prefers to make decisinos on their own. Value: ${min} (dependent on others) to ${max} (highly independent)`,
+        value: 0,
       },
       compassion: {
-        description:
-          `Their level of care or concern for others. Value: ${min} (indifferent) to ${max} (deeply compassionate)`,
-          value: 0,
+        description: `Their level of care or concern for others. Value: ${min} (indifferent) to ${max} (deeply compassionate)`,
+        value: 0,
       },
       creativity: {
-        description:
-          `How likely they are to approach problems in unique or imaginative ways. Value: ${min} (rigid thinker) to ${max} (highly creative)`,
-          value: 0,
+        description: `How likely they are to approach problems in unique or imaginative ways. Value: ${min} (rigid thinker) to ${max} (highly creative)`,
+        value: 0,
       },
       stubbornness: {
-        description:
-          `How resistant they are to changing their mind once they've formed an opinion. Value: ${min} (open-minded) to ${max} (highly stubborn)`,
-          value: 0,
+        description: `How resistant they are to changing their mind once they've formed an opinion. Value: ${min} (open-minded) to ${max} (highly stubborn)`,
+        value: 0,
       },
       impulsiveness: {
-        description:
-          `How quickly they react without thinking or planning ahead. Value: ${min} (calculated) to ${max} (impulsive)`,
-          value: 0,
+        description: `How quickly they react without thinking or planning ahead. Value: ${min} (calculated) to ${max} (impulsive)`,
+        value: 0,
       },
       discipline: {
-        description:
-          `How much they value structure, rules, and staying organized. Value: ${min} (carefree) to ${max} (highly disciplined)`,
-          value: 0,
+        description: `How much they value structure, rules, and staying organized. Value: ${min} (carefree) to ${max} (highly disciplined)`,
+        value: 0,
       },
       assertiveness: {
-        description:
-          `How forcefully they push their opinions or take the lead in conversations. Value: ${min} (passive) to ${max} (assertive)`,
-          value: 0,
+        description: `How forcefully they push their opinions or take the lead in conversations. Value: ${min} (passive) to ${max} (assertive)`,
+        value: 0,
       },
       skepticism: {
-        description:
-          `How much they question the treuth or intentions of others. Value: ${min} (gullible) to ${max} (highly skeptical)`,
-          value: 0,
+        description: `How much they question the treuth or intentions of others. Value: ${min} (gullible) to ${max} (highly skeptical)`,
+        value: 0,
       },
       affection: {
-        description:
-          `How emotionally expressive or loving they are toward others. Value: ${min} (reserved) to ${max} (very affectionate)`,
-          value: 0,
+        description: `How emotionally expressive or loving they are toward others. Value: ${min} (reserved) to ${max} (very affectionate)`,
+        value: 0,
       },
       adaptability: {
-        description:
-          `How easily they adjust to new situations, topics, or personalities. Value: ${min} (rigid) to ${max} (highly adaptable)`,
-          value: 0,
+        description: `How easily they adjust to new situations, topics, or personalities. Value: ${min} (rigid) to ${max} (highly adaptable)`,
+        value: 0,
       },
       sociability: {
-        description:
-          `How much they enjoy interacting with others or initiating conversation. Value: ${min} (introverted) to ${max} (extroverted)`,
-          value: 0,
+        description: `How much they enjoy interacting with others or initiating conversation. Value: ${min} (introverted) to ${max} (extroverted)`,
+        value: 0,
       },
       diplomacy: {
-        description:
-          `How tactful they are in dealing with conflicts or differing opinions. Value: ${min} (blunt) to ${max} (highly diplomatic)`,
-          value: 0,
+        description: `How tactful they are in dealing with conflicts or differing opinions. Value: ${min} (blunt) to ${max} (highly diplomatic)`,
+        value: 0,
       },
       humility: {
-        description:
-          `How humble or modest they are, avoiding arrogance. Value: ${min} (arrogant) to ${max} (humble)`,
-          value: 0,
+        description: `How humble or modest they are, avoiding arrogance. Value: ${min} (arrogant) to ${max} (humble)`,
+        value: 0,
       },
       loyalty: {
-        description:
-          `How loyal they are to particular people based on past interactions. Value: ${min} (disloyal) to ${max} (extremely loyal)`,
-          value: 0,
+        description: `How loyal they are to particular people based on past interactions. Value: ${min} (disloyal) to ${max} (extremely loyal)`,
+        value: 0,
       },
       jealousy: {
-        description:
-          `How likely they are to feel envious or threatened by others' relationships or actions. Value: ${min} (not jealous) to ${max} (easily jealous)`,
-          value: 0,
+        description: `How likely they are to feel envious or threatened by others' relationships or actions. Value: ${min} (not jealous) to ${max} (easily jealous)`,
+        value: 0,
       },
       resilience: {
-        description:
-          `How well they handle setbacks or negative emotions. Value: ${min} (easily upset) to ${max} (emotionally resilient)`,
-          value: 0,
+        description: `How well they handle setbacks or negative emotions. Value: ${min} (easily upset) to ${max} (emotionally resilient)`,
+        value: 0,
       },
       mood_stability: {
-        description:
-          `How likely their mood is to shift rapidly. Value: ${min} (volatile) to ${max} (stable)`,
-          value: 0,
+        description: `How likely their mood is to shift rapidly. Value: ${min} (volatile) to ${max} (stable)`,
+        value: 0,
       },
       forgiveness: {
-        description:
-          `How easily they forgive someone after a negative interaction. Value: ${min} (holds grudges) to ${max} (easily forgiving)`,
-          value: 0,
+        description: `How easily they forgive someone after a negative interaction. Value: ${min} (holds grudges) to ${max} (easily forgiving)`,
+        value: 0,
       },
       gratitude: {
-        description:
-          `How thankful they feel when receiving compliments or assistance. Value: ${min} (unappreciative) to ${max} (very grateful)`,
-          value: 0,
+        description: `How thankful they feel when receiving compliments or assistance. Value: ${min} (unappreciative) to ${max} (very grateful)`,
+        value: 0,
       },
 
       self_consciousness: {
-        description:
-          `How much they worry about how they are perceived by others. Value: ${min} (carefree) to ${max} (very self-conscious)`,
-          value: 0,
+        description: `How much they worry about how they are perceived by others. Value: ${min} (carefree) to ${max} (very self-conscious)`,
+        value: 0,
       },
       openness: {
-        description:
-          `How willing they are to engage in new experiences. Value: ${min} (avoidant) to ${max} (very willing)`,
-          value: 0,
+        description: `How willing they are to engage in new experiences. Value: ${min} (avoidant) to ${max} (very willing)`,
+        value: 0,
       },
       neuroticism: {
-        description:
-          `How sensitive they are to negative emotions like anxiety and stress. Value: ${min} (relaxed) to ${max} (very anxious)`,
+        description: `How sensitive they are to negative emotions like anxiety and stress. Value: ${min} (relaxed) to ${max} (very anxious)`,
         value: 0,
       },
       excitement: {
-        description:
-          `How easily they get enthusiastic and animated. Value: ${min} (reserved) to ${max} (very energetic)`,
-          value: 0,
+        description: `How easily they get enthusiastic and animated. Value: ${min} (reserved) to ${max} (very energetic)`,
+        value: 0,
       },
     };
 
