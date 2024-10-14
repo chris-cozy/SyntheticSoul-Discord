@@ -1165,7 +1165,7 @@ module.exports = async (client, msg) => {
 
     let ongoingConversationString =
       userMessages.length > 0
-        ? `This is the ongoing conversation between ${self.name} and ${
+        ? `This is what ${self.name} remembers of the ongoing conversation between them and ${
             user.name
           }: ${JSON.stringify(userMessages)}.`
         : `This is ${self.name}'s and ${
@@ -1178,7 +1178,7 @@ module.exports = async (client, msg) => {
     // MESSAGE ANALYSIS
     let initialEmotionQuery = {
       role: "user",
-      content: `${ongoingConversationString}. ${
+      content: `${
         self.name
       }'s current activity is ${JSON.stringify(
         self.activity_status
@@ -1186,7 +1186,7 @@ module.exports = async (client, msg) => {
         self.name
       }'s current emotional state is ${JSON.stringify(
         self.emotional_status
-      )}. This is what ${self.name} knows about ${user.name}: ${user.summary}. ${self.name} currently has ${JSON.stringify(
+      )}. ${ongoingConversationString}. This is what ${self.name} knows about ${user.name}: ${user.summary}. ${self.name} currently has ${JSON.stringify(
         user.sentiment_status
       )} towards ${user.name}. It is ${receiveDate.toISOString()}. ${
         user.name
@@ -1223,7 +1223,7 @@ module.exports = async (client, msg) => {
     // RECEIVED PROCESSING
     let messageReceivedQuery = {
       role: "user",
-      content: `Given ${self.name}'s personality, emotional state, and sentiments toward ${user.name}, how would ${self.name} perceive the purpose and tone of ${user.name}'s new message? Provide the message "${msg.content}", perceived purpose, and perceived tone in a JSON object with the properties of message, purpose, and tone.`,
+      content: `Given ${self.name}'s personality, current emotional state, and sentiments toward ${user.name}, how would ${self.name} perceive the purpose and tone of ${user.name}'s new message? Provide the message "${msg.content}", purpose, and tone in a JSON object with the properties of message, purpose, and tone.`,
     };
 
     innerDialogue.push(messageReceivedQuery);
@@ -1248,7 +1248,7 @@ module.exports = async (client, msg) => {
 
     let messageResponseQuery = {
       role: "user",
-      content: `How would ${self.name} respond back, and with what intended purpose and intended tone? They speak, type, and use punctuation in a way that aligns with their personality traits. Given all of this information, provide the reply message, intended purpose, and intended tone in a JSON object with the properties of message, purpose, and tone.`,
+      content: `The way ${self.name} speaks, types, and uses punctuation reflects their personality traits and emotional status. Given this information, how would ${self.name} respond back, and with what intended purpose and intended tone? Provide the response, intended purpose, and intended tone in a JSON object with the properties of message, purpose, and tone.`,
     };
 
     innerDialogue.push(messageResponseQuery);
