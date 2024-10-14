@@ -1194,7 +1194,7 @@ module.exports = async (client, msg) => {
         msg.content
       }. How would this alter ${
         self.name
-      }'s emotional state? Provide the new object (only the emotions whose value properties have changed, whether increased or decreased), and the reason behind the current emotional state. For each emotion property, the description property should be taken from the initial emotion object.`,
+      }'s emotional state? Provide the new object (only the emotions whose value properties have changed, whether increased or decreased), and the reason behind the current emotional state. For each emotion property, the description property should be identical to the description property of the original emotion object.`,
     };
 
     let innerDialogue = [initialEmotionQuery];
@@ -1272,7 +1272,7 @@ module.exports = async (client, msg) => {
     // REFLECTION
     let finalEmotionQuery = {
       role: "user",
-      content: `What is ${self.name}'s emotional state after sending their response? Provide the new object (only the emotions whose value properties have changed, whether increased or decreased), and the reason behind the current emotional state.`,
+      content: `What is ${self.name}'s emotional state after sending their response? Provide the new object (only the emotions whose value properties have changed, whether increased or decreased), and the reason behind the current emotional state. For each emotion property, the description property should be identical to the description property of the original emotion object.`,
     };
 
     innerDialogue.push(finalEmotionQuery);
@@ -1300,7 +1300,7 @@ module.exports = async (client, msg) => {
 
     let sentimentQuery = {
       role: "user",
-      content: `What are ${self.name}'s sentiment status towards ${user.name} after this message exchange? Provide the new object (only the sentiments whose value properties have changed, whether increased or decreased), and the updated reason behind the current sentiment.`,
+      content: `What are ${self.name}'s sentiment status towards ${user.name} after this message exchange? Provide the new object (only the sentiments whose value properties have changed, whether increased or decreased), and the updated reason behind the current sentiment. For each sentiment property, the description property should be identical to the description property of the original sentiment object.`,
     };
 
     innerDialogue.push(sentimentQuery);
