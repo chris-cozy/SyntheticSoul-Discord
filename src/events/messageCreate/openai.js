@@ -231,7 +231,7 @@ module.exports = async (client, msg) => {
         type: "object",
         properties: {
           message: {
-            description: "The response message",
+            description: "The message",
             type: "string",
           },
           purpose: {
@@ -1200,7 +1200,7 @@ module.exports = async (client, msg) => {
     // RECEIVED PROCESSING
     let messageReceivedQuery = {
       role: "user",
-      content: `Given their personality, emotional state, and sentiments toward ${user.name}, how would ${self.name} interpret the purpose and tone of ${user.name}'s message? Provide the message, purpose, and tone in a JSON object.`,
+      content: `Given ${self.name}'s personality, emotional state, and sentiments toward ${user.name}, how would ${self.name} perceive the purpose and tone of ${user.name}'s new message? Provide the message "${msg.content}", perceived purpose, and perceived tone in a JSON object with the properties of message, purpose, and tone.`,
     };
 
     innerDialogue.push(messageReceivedQuery);
@@ -1225,7 +1225,7 @@ module.exports = async (client, msg) => {
 
     let messageResponseQuery = {
       role: "user",
-      content: `How would ${self.name} respond, and with what purpose and tone? They speak, type, and use punctuation in a way that aligns with their personality traits. Given this information, provide the message, purpose, and tone in a JSON object.`,
+      content: `How would ${self.name} respond back, and with what intended purpose and intended tone? They speak, type, and use punctuation in a way that aligns with their personality traits. Given all of this information, provide the reply message, intended purpose, and intended tone in a JSON object with the properties of message, purpose, and tone.`,
     };
 
     innerDialogue.push(messageResponseQuery);
