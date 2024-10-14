@@ -1,41 +1,119 @@
-# Jasmine (discord.js)
-## Description
-This is a discord bot created using the discord.js library, as well as other capatible libraries. The purpose of this bot is a digital-assistant, conversationalist, and server manager.
+# Synthetic Soul : A Humanlike Mind Simulation Chatbot
 
-## Features
-### Conversation
-This bot has integrated gpt-3.5 turbo capabilities, and can be conversed with by the user prefixing their message with a bot mention. The bot will retain the conversation context with that specific user, to a certain degree.
-Due to the API cost, the user needs to have credits to chat with the bot. These credits can be collected for free each day with the '/daily' command. Each chat subtracts an amount of credits from the user's balance, currenty 25.
-### Administrative Commands
-- /autorole-configure - Set up the auto role for users to gain when joining the server
-- /autorole-disable - Disable the auto role for the server
-- /role-add - Add a role to the server
-- /role-edit - Edit a server role
-- /role-delete - Delete a role from the server
-### Miscellaneous Commands
-- /info - Displays general information about the bot.
-- /ping - Sends the bot's websocket and client pings.
-### Moderation Commands
-- /ban - Bans the specified user, if permitted.
-- /kick - Kicks the specified user, if permitted.
-- /timeout - Puts the specified user in a timeout of specified length, if permitted.
-- /roles - Sends role buttons, allowing a user to change their role.
-### Economic Commands
-- /level - Sends a rank card which displays the specified user's level, xp, and rank in the server.
-- /daily - Collects the user's daily allowance. If user does not have balance account yet, sets it up.
-- /balance - Checks the specified user's balance
-## Prerequisites
-Node.js
+## Project Overview
+
+Synthetic Soul is an experimental chatbot designed to simulate humanlike emotions, thinking patterns, and relationship dynamics. The goal of the project is to create a chatbot that not only responds to user inputs but does so with an evolving personality that reflects emotional depth, biases, and individualized sentiments towards different users. Inspired by concepts from artificial intelligence, psychology, and human relationships, this program aims to provide dynamic, humanlike interactions that adapt based on ongoing conversations and user behavior. The name of the chatbot is *Jasmine*.
+
+## Goals of the Project
+
+1. **Simulate Human Emotions and Relationships**  
+   Jasmine is designed to mirror how humans interact with others based on emotional states and relationships. It keeps track of evolving sentiments such as trust, affection, admiration, and anger, adjusting its behavior in real-time as interactions progress.
+
+2. **Dynamic Sentiment-Based Responses**  
+   Jasmine adjusts her tone, language, and responses based on both pre-defined personality traits and the specific sentiments it has towards a particular user.
+
+3. **Persistent Emotional States**  
+   Each interaction leaves an emotional imprint on Jasmine. These sentiments are updated, stored, and evolve over time, making future conversations with the same user different as Jasmine’s "feelings" toward them change. Her current emotional state also affects conversations with other users.
+
+## Core Concepts and Features
+
+### 1. **Emotional Schemas**  
+   Jasmine uses emotion schemas to represent a range of human emotions and dispositions. These schemas define both the intensity of emotions and the specific reason behind her feeling them at the time. Key emotions tracked by the chatbot include:
+   - **Happiness**
+   - **Anger**
+   - **Sadness**
+   - **Fear**
+   - **Surprise**
+   - **Disgust**
+   - (and many more…)
+
+### 2. **Personality Parameters**  
+   Jasmine's personality has baseline values for various traits, such as friendliness, loyalty, curiosity, etc. These values can change over time depending on how users interact with the bot. Key personality traits that are considered are:
+   - **Friendliness**
+   - **Trust**
+   - **Curiosity**
+   - **Empathy**
+   - **Humor**
+   - **Seriousness**
+   - (and many more…)
+
+### 3. **Sentiment Schemas**  
+   Jasmine uses sentiment schemas to represent a range of human dispositions towards specific users. These schemas define both the intensity of sentiment and the specific reason behind her feeling that way towards them. Certain behaviors increase or decrease Jasmine's sentiments for the user. Key sentiments tracked by the chatbot include:
+   - **Affection**
+   - **Trust**
+   - **Admiration**
+   - **Gratitude**
+   - **Fondness**
+   - **Respect**
+   - (and many more…)
+
+### 4. **User Schema**  
+   Each user Jasmine interacts with has a unique profile (or schema), which stores the emotional and sentiment data that Jasmine has developed based on past interactions. This enables Jasmine to respond and act differently to each user, reflecting the complexity of human relationships.
+
+## Breakdown of the Logic Loop
+
+The core logic loop of Jasmine follows a structured series of steps to provide dynamic, emotionally-driven responses. Here’s a breakdown of each step:
+
+### 1. **Input Received**  
+   - **Action:** Jasmine receives user message.
+
+### 2. **Contextual Awareness**  
+   - **Action:** Jasmine checks the current time, as well as her current activity. She checks her stored schema for the user, identifying who is speaking and what the current relationship dynamics are, what she thinks and feels about them. She also rereads the past 15 messages between her and that user, if available, for more context of the new message.
+   - **Logic:** Jasmine retrieves her own current information, as well as the current time, and the information of the user she is speaking with. She considers the sentiments she has towards the user, as well as their intensity.
+   
+
+### 3. **Personality and Emotional Influence**  
+   - **Action:** Jasmine references internal personality parameters, as well as current emotional state, in combination with the context, to influence what the new message causes her to feel.
+   - **Logic:** Personality traits such as friendliness, loyalty, and curiosity, and emotional states such as anger and frustration affect how Jasmine emotionally reacts to the user's input.
+
+### 1. **Message Processing**  
+   - **Action:** Jasmine determines what the message's purpose and tone was, based on her personality, emotional state, and sentiment towards the user which sent it. This leaves rooms for misinterpretation, and miscommunication due to emotional biases.
+   - **Logic:** Natural language processing (NLP) techniques analyze the perceived purpose and tone of the message.
+
+### 5. **Generate Response**  
+   - **Action:** Jasmine generates a response based on all of the information gathered up to this point.
+   - **Logic:** The response is formulated to sound humanlike, reflecting Jasmine’s personality traits, emotional state, and current sentiment toward the user.
+   - **Outcome:** Jasmine sends the response back to the user, creating a conversation that mirrors human emotions and biases.
+
+### 3. **Emotional Reflection**  
+   - **Action:** Jasmine evaluates what sending her response causes her to feel.
+   - **Logic:** Jasmine's current emotional state is updated to reflect this.
+
+### 4. **Sentiment Update**  
+   - **Action:** Jasmine recalculates the sentiments it holds toward the user based on their message.
+   - **Logic:** Sentiment values like trust, affection, or admiration are updated based on how positive or negative the interaction is perceived to be. This allows Jasmine to "feel" differently toward users over time.
+   - **Outcome:** The updated sentiment values are stored in the user schema, ensuring that future interactions will reflect these evolving sentiments.
+
+## Example Workflow
+
+Let's take an example interaction to demonstrate how Jasmine’s logic loop works:
+
+**User Input:** "Hey Jasmine, you never replied to my message yesterday. I was really counting on you."
+
+1. **Input Parsing:**  
+   Jasmine detects frustration in the user’s message (keywords: "never replied," "counting on you") and identifies it as a slightly negative sentiment.
+
+2. **Contextual Awareness:**  
+   Jasmine checks its memory and sees that this user is generally trusted but may have lower affection at the moment due to recent events. It adjusts its response to be more apologetic and supportive.
+
+3. **Personality Influence:**  
+   Jasmine has a baseline personality trait of being loyal and compassionate, so its response is colored by an attempt to restore trust and show support.
+
+4. **Sentiment Update:**  
+   Trust and disappointment values are adjusted. Jasmine increases its compassion sentiment while slightly lowering trust due to the user's criticism.
+
+5. **Generate Response:**  
+   Jasmine responds with: "I’m really sorry for not replying sooner. That was my mistake, and I understand how important it was to you. How can I make it right?"
+Jasmine can be conversed with by the user prefixing their message with a bot mention. 
 
 ## Installation and Use
 1. Download the code base.
 2. Open a terminal in the main directory
 3. Run the command: `npx nodemon index.js`
+4. Jasmine can be conversed with by the user prefixing their message with a bot mention. 
 ## Contributing
-Issue Tracker: [discord-bot-js/issues](https://github.com/chris-cozy/discord-bot-js/issues "Issue tracker for the discord bot")
+Issue Tracker: [SyntheticSoul-Discord/issues](https://github.com/chris-cozy/SyntheticSoul-Discord/issues")
 ## License
-Currently Not Applicable
-## Citation
-Currently Not Applicable
+This project is licensed under the MIT License
 ## Contact
 For more information, contact <csande9@clemson.edu>
