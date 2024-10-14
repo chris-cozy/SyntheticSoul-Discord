@@ -248,6 +248,23 @@ module.exports = async (client, msg) => {
     },
   });
 
+  const getSummarySchema = () => ({
+    type: "json_schema",
+    json_schema: {
+      name: "summary_object",
+      schema: {
+        type: "object",
+        properties: {
+          summary: {
+            description: "Updated perceived knowledge about the user",
+            type: "string",
+          },
+        },
+        additionalProperties: false,
+      },
+    },
+  });
+
   const getSentimentStatusSchema = () => ({
     type: "json_schema",
     json_schema: {
@@ -1141,16 +1158,22 @@ module.exports = async (client, msg) => {
     const spliceBound = 15;
     let userMessages = userConversation.messages.slice(-spliceBound);
 
+    //console.log("USER MESSAGES");
+    //console.log(userMessages);
+
     let receiveDate = new Date();
 
     let ongoingConversationString =
-      userMessages.count == 0
+      userMessages.length > 0
         ? `This is the ongoing conversation between ${self.name} and ${
             user.name
           }: ${JSON.stringify(userMessages)}.`
         : `This is ${self.name}'s and ${
           user.name
         }'s first time communicating.`;
+
+    console.log("REVIEWED MESSAGE COUNT");
+    console.log(userMessages.length);
 
     // MESSAGE ANALYSIS
     let initialEmotionQuery = {
@@ -1163,7 +1186,7 @@ module.exports = async (client, msg) => {
         self.name
       }'s current emotional state is ${JSON.stringify(
         self.emotional_status
-      )}. ${self.name} currently has ${JSON.stringify(
+      )}. This is what ${self.name} knows about ${user.name}: ${user.summary}. ${self.name} currently has ${JSON.stringify(
         user.sentiment_status
       )} towards ${user.name}. It is ${receiveDate.toISOString()}. ${
         user.name
@@ -1301,8 +1324,35 @@ module.exports = async (client, msg) => {
       deepMerge(user.sentiment_status, sentimentQueryResponse)
     );
 
+
+    let summaryQuery = {
+      role: "user",
+      content: `What new information has ${self.name} learned about ${user.name} from this message exchange? Provide this in string format in the "summary" property of a new object to reflect ${self.name}'s updated knowledge. Retain information that hasn't changed, add any new information that seems relevant to remember, and change any information that needs updating.`,
+    };
+
+    innerDialogue.push(summaryQuery);
+
+    console.log("SUMMARY CHANGES");
+    const summaryQueryResponse = await getStructuredInnerDialogueResponse(
+      innerDialogue,
+      getSummarySchema()
+    );
+
+    innerDialogue.push({
+      role: "assistant",
+      content: `${JSON.stringify(summaryQueryResponse)}`,
+    });
+
+    if (!summaryQueryResponse) {
+      msg.reply("Error reflecting on sentiment");
+    }
+
+    user.summary = summaryQueryResponse.summary;
+
+
     let incomingMessage = new Messages({
       ...messageReceivedQueryResponse,
+      sender: user.name,
       timestamp: receiveDate,
       is_bot: false,
     });
@@ -1310,6 +1360,7 @@ module.exports = async (client, msg) => {
     let responseDate = new Date();
     let messageResponse = new Messages({
       ...messageResponseQueryResponse,
+      sender: self.name,
       timestamp: responseDate,
       is_bot: true,
     });
