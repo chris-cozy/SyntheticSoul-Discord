@@ -1517,6 +1517,7 @@ module.exports = {
   Memories: model("memories", memorySchema),
   SentimentStatus: model("sentiment_status", sentimentStatusSchema),
   EmotionalStatus: model("emotional_status", emotionStatusSchema),
+  Emotions: model("emotions", emotionSchema),
   Self: model("selves", selfSchema),
   Personality: model("personalities", personalitySchema),
   PersonalityTrait: model("personality_traits", personalityTraitSchema),
