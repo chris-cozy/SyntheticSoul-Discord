@@ -720,6 +720,16 @@ const personalitySchema = new Schema({
       max: maxPersonalityValue,
     },
   },
+  flirtatiousness: {
+    type: personalityTraitSchema,
+    required: false,
+    default: {
+      description: `How playful, flirty, or suggestive they are in their interactions. Scale: ${minPersonalityValue} (not flirtatious at all) to ${maxPersonalityValue} (extremely flirtatious)`,
+      value: maxPersonalityValue / 2,
+      min: minPersonalityValue,
+      max: maxPersonalityValue,
+    },
+  },
   trust: {
     type: personalityTraitSchema,
     required: false,
@@ -1238,6 +1248,10 @@ personalityModifierSchema = new Schema({
     required: false,
     default: {
       friendliness: {
+        description: `How warm and welcoming they are in their interactions. Scale: ${minPersonalityValue} (cold/distant) to ${maxPersonalityValue} (Extremely friendly)`,
+        value: 0,
+      },
+      flirtatiousness: {
         description: `How warm and welcoming they are in their interactions. Scale: ${minPersonalityValue} (cold/distant) to ${maxPersonalityValue} (Extremely friendly)`,
         value: 0,
       },
