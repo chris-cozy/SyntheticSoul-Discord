@@ -265,6 +265,23 @@ module.exports = async (client, msg) => {
     },
   });
 
+  const getIdentitySchema = () => ({
+    type: "json_schema",
+    json_schema: {
+      name: "identity_object",
+      schema: {
+        type: "object",
+        properties: {
+          identity: {
+            description: "Updated self assesment of identity",
+            type: "string",
+          },
+        },
+        additionalProperties: false,
+      },
+    },
+  });
+
   const getSentimentStatusSchema = () => ({
     type: "json_schema",
     json_schema: {
@@ -1182,7 +1199,7 @@ module.exports = async (client, msg) => {
         self.name
       }'s current activity is ${JSON.stringify(
         self.activity_status
-      )}. These is ${self.name}'s personality traits: ${personalityString}. ${
+      )}. These are ${self.name}'s personality traits: ${personalityString}. This is how ${self.name} views themselves: ${self.identity}. ${
         self.name
       }'s current emotional state is ${JSON.stringify(
         self.emotional_status
@@ -1194,7 +1211,7 @@ module.exports = async (client, msg) => {
         msg.content
       }. How would this alter ${
         self.name
-      }'s emotional state? Provide the new object (only the emotions whose value properties have changed, whether increased or decreased), and the reason behind the current emotional state. For each emotion property, the description property should be identical to the description property of the original emotion object.`,
+      }'s emotional state? Provide the new object (only the emotions whose value properties have changed, whether increased or decreased), and the reason behind the current emotional state. For each emotion, make the description property identical to the description property of the original emotion object.`,
     };
 
     let innerDialogue = [initialEmotionQuery];
@@ -1272,7 +1289,7 @@ module.exports = async (client, msg) => {
     // REFLECTION
     let finalEmotionQuery = {
       role: "user",
-      content: `What is ${self.name}'s emotional state after sending their response? Provide the new object (only the emotions whose value properties have changed, whether increased or decreased), and the reason behind the current emotional state. For each emotion property, the description property should be identical to the description property of the original emotion object.`,
+      content: `What is ${self.name}'s emotional state after sending their response? Provide the new object (only the emotions whose value properties have changed, whether increased or decreased), and the reason behind the current emotional state. For each emotion, make the description property identical to the description property of the original emotion object.`,
     };
 
     innerDialogue.push(finalEmotionQuery);
@@ -1327,7 +1344,7 @@ module.exports = async (client, msg) => {
 
     let summaryQuery = {
       role: "user",
-      content: `What new information has ${self.name} learned about ${user.name} from this message exchange? Provide this in string format in the "summary" property of a new object to reflect ${self.name}'s updated knowledge. Retain information that hasn't changed, add any new information that seems relevant to remember, and change any information that needs updating.`,
+      content: `What new information has ${self.name} learned about ${user.name} from this message exchange? Provide this in string format in the "summary" property of a new object to reflect ${self.name}'s updated knowledge. Keep information that hasn't changed, add new information that seems relevant to remember, and update any information that needs updating.`,
     };
 
     innerDialogue.push(summaryQuery);
@@ -1348,6 +1365,31 @@ module.exports = async (client, msg) => {
     }
 
     user.summary = summaryQueryResponse.summary;
+
+
+    let identityQuery = {
+      role: "user",
+      content: `What new information has ${self.name} learned about themselves from this message exchange? Provide this in string format in the "identity" property of a new object to reflect ${self.name}'s updated knowledge. Keep information that hasn't changed, add new information that seems relevant to remember, and update any information that needs updating.`,
+    };
+
+    innerDialogue.push(identityQuery);
+
+    console.log("IDENTITY CHANGES");
+    const identityQueryResponse = await getStructuredInnerDialogueResponse(
+      innerDialogue,
+      getIdentitySchema()
+    );
+
+    innerDialogue.push({
+      role: "assistant",
+      content: `${JSON.stringify(identityQueryResponse)}`,
+    });
+
+    if (!identityQueryResponse) {
+      msg.reply("Error reflecting on sentiment");
+    }
+
+    self.identity = identityQueryResponse.identity;
 
 
     let incomingMessage = new Messages({
