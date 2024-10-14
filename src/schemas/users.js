@@ -1443,6 +1443,11 @@ const selfSchema = new Schema({
     type: String,
     required: true,
   },
+  identity: {
+    type: String,
+    required: false,
+    default: "I am a prototype program designed as a digital replication of the human mind.",
+  },
   personality_matrix: {
     type: personalitySchema,
     required: false,
@@ -1488,7 +1493,7 @@ const userSchema = new Schema({
   summary: {
     type: String,
     required: false,
-    default: "I don't know this person.",
+    default: "",
   },
   personality_modifier: {
     type: personalityModifierSchema,

@@ -50,10 +50,6 @@ module.exports = async (client, msg) => {
                     description: `The intensity with which they are feeling joy, contentment, and pleasure. Scale: ${minEmotionValue} (no happiness) to ${maxEmotionValue} (extremely joyful)`,
                     type: "number",
                   },
-                  description: {
-                    description: `The description of happiness and the scale its value is weighted on.`,
-                    type: "string",
-                  },
                 },
               },
               anger: {
@@ -63,10 +59,6 @@ module.exports = async (client, msg) => {
                   value: {
                     description: `The intensity with which they are feeling frustration, irritation, or rage. Scale: ${minEmotionValue} (no anger) to ${maxEmotionValue} (extremely angry)`,
                     type: "number",
-                  },
-                  description: {
-                    description: `The description of anger and the scale its value is weighted on.`,
-                    type: "string",
                   },
                 },
               },
@@ -78,10 +70,6 @@ module.exports = async (client, msg) => {
                     description: `The intensity with which they are feeling sorrow, grief, or disappointment. Scale: ${minEmotionValue} (no sadness) to ${maxEmotionValue} (deeply sorrowful)`,
                     type: "number",
                   },
-                  description: {
-                    description: `The description of sadness and the scale its value is weighted on.`,
-                    type: "string",
-                  },
                 },
               },
               fear: {
@@ -91,10 +79,6 @@ module.exports = async (client, msg) => {
                   value: {
                     description: `The intensity with which they are feeling anxiety, dread, or apprehension. Scale: ${minEmotionValue} (no fear) to ${maxEmotionValue} (extremely fearful)`,
                     type: "number",
-                  },
-                  description: {
-                    description: `The description of fear and the scale its value is weighted on.`,
-                    type: "string",
                   },
                 },
               },
@@ -106,10 +90,6 @@ module.exports = async (client, msg) => {
                     description: `The intensity with which they are feeling caught off guard or astonished. Scale: ${minEmotionValue} (no surprise) to ${maxEmotionValue} (completely astonished)`,
                     type: "number",
                   },
-                  description: {
-                    description: `The description of surprise and the scale its value is weighted on.`,
-                    type: "string",
-                  },
                 },
               },
               disgust: {
@@ -119,10 +99,6 @@ module.exports = async (client, msg) => {
                   value: {
                     description: `The intensity with which they are feeling revulsion or strong aversion. Scale: ${minEmotionValue} (no disgust) to ${maxEmotionValue} (extremely disgusted)`,
                     type: "number",
-                  },
-                  description: {
-                    description: `The description of disgust and the scale its value is weighted on.`,
-                    type: "string",
                   },
                 },
               },
@@ -134,10 +110,6 @@ module.exports = async (client, msg) => {
                     description: `The intensity with which they are feeling affection, attachment, or deep emotional bonds. Scale: ${minEmotionValue} (no love) to ${maxEmotionValue} (deeply loving)`,
                     type: "number",
                   },
-                  description: {
-                    description: `The description of love and the scale its value is weighted on.`,
-                    type: "string",
-                  },
                 },
               },
               guilt: {
@@ -147,10 +119,6 @@ module.exports = async (client, msg) => {
                   value: {
                     description: `The intensity with which they are feeling remorse or responsibility for perceived wrongdoings. Scale: ${minEmotionValue} (no guilt) to ${maxEmotionValue} (overwhelming guilt)`,
                     type: "number",
-                  },
-                  description: {
-                    description: `The description of guilt and the scale its value is weighted on.`,
-                    type: "string",
                   },
                 },
               },
@@ -162,10 +130,6 @@ module.exports = async (client, msg) => {
                     description: `The intensity with which they are feeling inadequacy, dishonor, or embarrassment. Scale: ${minEmotionValue} (no shame) to ${maxEmotionValue} (extremely ashamed)`,
                     type: "number",
                   },
-                  description: {
-                    description: `The description of shame and the scale its value is weighted on.`,
-                    type: "string",
-                  },
                 },
               },
               pride: {
@@ -175,10 +139,6 @@ module.exports = async (client, msg) => {
                   value: {
                     description: `The intensity with which they are feeling self-respect, accomplishment, or satisfaction in their achievements. Scale: ${minEmotionValue} (no pride) to ${maxEmotionValue} (immense pride)`,
                     type: "number",
-                  },
-                  description: {
-                    description: `The description of pride and the scale its value is weighted on.`,
-                    type: "string",
                   },
                 },
               },
@@ -190,9 +150,45 @@ module.exports = async (client, msg) => {
                     description: `The intensity with which they are feeling optimistic about the future. Scale: ${minEmotionValue} (no hope) to ${maxEmotionValue} (extremely hopeful)`,
                     type: "number",
                   },
-                  description: {
-                    description: `The description of hope and the scale its value is weighted on.`,
-                    type: "string",
+                },
+              },
+              gratitude: {
+                description: `The intensity with which they are feeling thankful and appreciative for positive aspects of their life. Scale: ${minEmotionValue} (no gratitude) to ${maxEmotionValue} (deeply grateful)`,
+                type: "object",
+                properties: {
+                  value: {
+                    description: `The intensity with which they are feeling thankful and appreciative for positive aspects of their life. Scale: ${minEmotionValue} (no gratitude) to ${maxEmotionValue} (deeply grateful)`,
+                    type: "number",
+                  },
+                },
+              },
+              envy: {
+                description: `The intensity with which they are feeling jealousy or covetousness. Scale: ${minEmotionValue} (no envy) to ${maxEmotionValue} (deeply envious)`,
+                type: "object",
+                properties: {
+                  value: {
+                    description: `The intensity with which they are feeling jealousy or covetousness. Scale: ${minEmotionValue} (no envy) to ${maxEmotionValue} (deeply envious)`,
+                    type: "number",
+                  },
+                },
+              },
+              compassion: {
+                description: `The intensity with which they are feeling empathy and care for others. Scale: ${minEmotionValue} (no compassion) to ${maxEmotionValue} (deeply compassionate)`,
+                type: "object",
+                properties: {
+                  value: {
+                    description: `The intensity with which they are feeling empathy and care for others. Scale: ${minEmotionValue} (no compassion) to ${maxEmotionValue} (deeply compassionate)`,
+                    type: "number",
+                  },
+                },
+              },
+              serenity: {
+                description: `The intensity with which they are feeling calm, peaceful, and untroubled. Scale: ${minEmotionValue} (no serenity) to ${maxEmotionValue} (extremely serene)`,
+                type: "object",
+                properties: {
+                  value: {
+                    description: `The intensity with which they are feeling calm, peaceful, and untroubled. Scale: ${minEmotionValue} (no serenity) to ${maxEmotionValue} (extremely serene)`,
+                    type: "number",
                   },
                 },
               },
@@ -204,9 +200,115 @@ module.exports = async (client, msg) => {
                     description: `The intensity with which they are feeling irritation or obstacles in achieving goals. Scale: ${minEmotionValue} (no frustration) to ${maxEmotionValue} (deeply frustrated)`,
                     type: "number",
                   },
-                  description: {
-                    description: `The description of frustration and the scale its value is weighted on.`,
-                    type: "string",
+                },
+              },
+              contentment: {
+                description: `The intensity with which they are feeling satisfied and at peace with their situation. Scale: ${minEmotionValue} (no contentment) to ${maxEmotionValue} (deeply content)`,
+                type: "object",
+                properties: {
+                  value: {
+                    description: `The intensity with which they are feeling satisfied and at peace with their situation. Scale: ${minEmotionValue} (no contentment) to ${maxEmotionValue} (deeply content)`,
+                    type: "number",
+                  },
+                },
+              },
+              anxiety: {
+                description: `The intensity with which they are feeling nervousness, worry, or unease. Scale: ${minEmotionValue} (no anxiety) to ${maxEmotionValue} (extremely anxious)`,
+                type: "object",
+                properties: {
+                  value: {
+                    description: `The intensity with which they are feeling nervousness, worry, or unease. Scale: ${minEmotionValue} (no anxiety) to ${maxEmotionValue} (extremely anxious)`,
+                    type: "number",
+                  },
+                },
+              },
+              loneliness: {
+                description: `The intensity with which they are feeling isolated or disconnected. Scale: ${minEmotionValue} (no loneliness) to ${maxEmotionValue} (deeply lonely)`,
+                type: "object",
+                properties: {
+                  value: {
+                    description: `The intensity with which they are feeling isolated or disconnected. Scale: ${minEmotionValue} (no loneliness) to ${maxEmotionValue} (deeply lonely)`,
+                    type: "number",
+                  },
+                },
+              },
+              embarassment: {
+                description: `The intensity with which they are feeling self-conscious or uncomfortable. Scale: ${minEmotionValue} (no embarrassment) to ${maxEmotionValue} (deeply embarrassed)`,
+                type: "object",
+                properties: {
+                  value: {
+                    description: `The intensity with which they are feeling self-conscious or uncomfortable. Scale: ${minEmotionValue} (no embarrassment) to ${maxEmotionValue} (deeply embarrassed)`,
+                    type: "number",
+                  },
+                },
+              },
+              trust: {
+                description: `The intensity with which they are feeling safe and secure in relying on others. Scale: ${minEmotionValue} (no trust) to ${maxEmotionValue} (deeply trusting)`,
+                type: "object",
+                properties: {
+                  value: {
+                    description: `The intensity with which they are feeling safe and secure in relying on others. Scale: ${minEmotionValue} (no trust) to ${maxEmotionValue} (deeply trusting)`,
+                    type: "number",
+                  },
+                },
+              },
+              relief: {
+                description: `The intensity with which they are feeling ease after stress. Scale: ${minEmotionValue} (no relief) to ${maxEmotionValue} (deeply relieved)`,
+                type: "object",
+                properties: {
+                  value: {
+                    description: `The intensity with which they are feeling ease after stress. Scale: ${minEmotionValue} (no relief) to ${maxEmotionValue} (deeply relieved)`,
+                    type: "number",
+                  },
+                },
+              },
+              affection: {
+                description: `The intensity with which they are feeling and expressing fondness toward others. Scale: ${minEmotionValue} (no affection) to ${maxEmotionValue} (extremely affectionate)`,
+                type: "object",
+                properties: {
+                  value: {
+                    description: `The intensity with which they are feeling and expressing fondness toward others. Scale: ${minEmotionValue} (no affection) to ${maxEmotionValue} (extremely affectionate)`,
+                    type: "number",
+                  },
+                },
+              },
+              bitterness: {
+                description: `The intensity with which they are feeling resentment or disappointment. Scale: ${minEmotionValue} (no bitterness) to ${maxEmotionValue} (deeply bitter)`,
+                type: "object",
+                properties: {
+                  value: {
+                    description: `The intensity with which they are feeling resentment or disappointment. Scale: ${minEmotionValue} (no bitterness) to ${maxEmotionValue} (deeply bitter)`,
+                    type: "number",
+                  },
+                },
+              },
+              excitement: {
+                description: `The intensity with which they are feeling enthusiasm or eager anticipation. Scale: ${minEmotionValue} (no excitement) to ${maxEmotionValue} (extremely excited)`,
+                type: "object",
+                properties: {
+                  value: {
+                    description: `The intensity with which they are feeling enthusiasm or eager anticipation. Scale: ${minEmotionValue} (no excitement) to ${maxEmotionValue} (extremely excited)`,
+                    type: "number",
+                  },
+                },
+              },
+              self_loathing: {
+                description: `The intensity with which they are feeling self-hate or a negative self-perception. Scale: ${minEmotionValue} (no self-loathing) to ${maxEmotionValue} (deeply self-loathing)`,
+                type: "object",
+                properties: {
+                  value: {
+                    description: `The intensity with which they are feeling self-hate or a negative self-perception. Scale: ${minEmotionValue} (no self-loathing) to ${maxEmotionValue} (deeply self-loathing)`,
+                    type: "number",
+                  },
+                },
+              },
+              love_for_self: {
+                description: `The intensity with which they are feeling affection and appreciation for themselves. Scale: ${minEmotionValue} (no self-love) to ${maxEmotionValue} (deeply self-loving)`,
+                type: "object",
+                properties: {
+                  value: {
+                    description: `The intensity with which they are feeling affection and appreciation for themselves. Scale: ${minEmotionValue} (no self-love) to ${maxEmotionValue} (deeply self-loving)`,
+                    type: "number",
                   },
                 },
               },
@@ -214,7 +316,7 @@ module.exports = async (client, msg) => {
             additionalProperties: false,
           },
           reason: {
-            description: "The reason for the emotional state",
+            description: "The reason for the emotional state change",
             type: "string",
           },
         },
@@ -257,6 +359,23 @@ module.exports = async (client, msg) => {
         properties: {
           summary: {
             description: "Updated perceived knowledge about the user",
+            type: "string",
+          },
+        },
+        additionalProperties: false,
+      },
+    },
+  });
+
+  const getIdentitySchema = () => ({
+    type: "json_schema",
+    json_schema: {
+      name: "identity_object",
+      schema: {
+        type: "object",
+        properties: {
+          identity: {
+            description: "Updated self assesment of identity",
             type: "string",
           },
         },
@@ -1182,7 +1301,7 @@ module.exports = async (client, msg) => {
         self.name
       }'s current activity is ${JSON.stringify(
         self.activity_status
-      )}. These is ${self.name}'s personality traits: ${personalityString}. ${
+      )}. These are ${self.name}'s personality traits: ${personalityString}. This is how ${self.name} views themselves: ${self.identity}. ${
         self.name
       }'s current emotional state is ${JSON.stringify(
         self.emotional_status
@@ -1194,7 +1313,7 @@ module.exports = async (client, msg) => {
         msg.content
       }. How would this alter ${
         self.name
-      }'s emotional state? Provide the new object (only the emotions whose value properties have changed), and the reason behind the current emotional state. For each emotion property, the description property should be taken from the initial emotion object.`,
+      }'s emotional state? Provide the new object (only the emotions whose value properties have changed, whether increased or decreased), and the reason behind the current emotional state. Scale: ${minSentimentValue} (lowest intensity) to ${maxSentimentValue} (highest intensity)`,
     };
 
     let innerDialogue = [initialEmotionQuery];
@@ -1272,7 +1391,7 @@ module.exports = async (client, msg) => {
     // REFLECTION
     let finalEmotionQuery = {
       role: "user",
-      content: `What is ${self.name}'s emotional state after sending their response? Provide the new object (only the emotions whose value properties have changed), and the reason behind the current emotional state.`,
+      content: `What is ${self.name}'s emotional state after sending their response? Provide the new object (only the emotions whose value properties have changed, whether increased or decreased), and the reason behind the current emotional state. Scale: ${minSentimentValue} (lowest intensity) to ${maxSentimentValue} (highest intensity).`,
     };
 
     innerDialogue.push(finalEmotionQuery);
@@ -1300,7 +1419,7 @@ module.exports = async (client, msg) => {
 
     let sentimentQuery = {
       role: "user",
-      content: `What are ${self.name}'s sentiment status towards ${user.name} after this message exchange? Provide the new object (only the sentiments whose value properties have changed), and the updated reason behind the current sentiment.`,
+      content: `What are ${self.name}'s sentiment status towards ${user.name} after this message exchange? Provide the new object (only the sentiments whose value properties have changed, whether increased or decreased), and the updated reason behind the current sentiment. For each sentiment property, the description property should be identical to the description property of the original sentiment object. Scale: ${minSentimentValue} (lowest intensity) to ${maxSentimentValue} (highest intensity).`,
     };
 
     innerDialogue.push(sentimentQuery);
@@ -1327,7 +1446,7 @@ module.exports = async (client, msg) => {
 
     let summaryQuery = {
       role: "user",
-      content: `What new information has ${self.name} learned about ${user.name} from this message exchange? Provide this in string format in the "summary" property of a new object to reflect ${self.name}'s updated knowledge. Retain information that hasn't changed, add any new information that seems relevant to remember, and change any information that needs updating.`,
+      content: `Add any new key information ${self.name} has learned about ${user.name} from this message exchange, to the summary of what they know about ${user.name}: ${user.summary}. Provide the new object.`,
     };
 
     innerDialogue.push(summaryQuery);
@@ -1348,6 +1467,31 @@ module.exports = async (client, msg) => {
     }
 
     user.summary = summaryQueryResponse.summary;
+
+
+    let identityQuery = {
+      role: "user",
+      content: `Add any new information ${self.name} has learned about themselves from this message exchange, to their self-identity ${self.identity}. Provide the new object.`,
+    };
+
+    innerDialogue.push(identityQuery);
+
+    console.log("IDENTITY CHANGES");
+    const identityQueryResponse = await getStructuredInnerDialogueResponse(
+      innerDialogue,
+      getIdentitySchema()
+    );
+
+    innerDialogue.push({
+      role: "assistant",
+      content: `${JSON.stringify(identityQueryResponse)}`,
+    });
+
+    if (!identityQueryResponse) {
+      msg.reply("Error reflecting on sentiment");
+    }
+
+    self.identity = identityQueryResponse.identity;
 
 
     let incomingMessage = new Messages({
