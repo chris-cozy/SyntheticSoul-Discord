@@ -1158,8 +1158,8 @@ module.exports = async (client, msg) => {
     const spliceBound = 15;
     let userMessages = userConversation.messages.slice(-spliceBound);
 
-    console.log("USER MESSAGES");
-    console.log(userMessages);
+    //console.log("USER MESSAGES");
+    //console.log(userMessages);
 
     let receiveDate = new Date();
 
@@ -1172,8 +1172,8 @@ module.exports = async (client, msg) => {
           user.name
         }'s first time communicating.`;
 
-    console.log("ONGOING CONVERSATION");
-    console.log(ongoingConversationString);
+    console.log("REVIEWED MESSAGE COUNT");
+    console.log(userMessages.length);
 
     // MESSAGE ANALYSIS
     let initialEmotionQuery = {
