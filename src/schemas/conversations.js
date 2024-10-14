@@ -23,6 +23,10 @@ const messageSchema = new Schema({
     required: false,
     default: new Date(),
   },
+  sender: {
+    type: String,
+    required: true,
+  },
   is_bot: {
     type: Boolean,
     required: true,
