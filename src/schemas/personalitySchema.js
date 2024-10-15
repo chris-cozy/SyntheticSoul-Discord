@@ -1,7 +1,7 @@
 const { Schema, model, Types } = require("mongoose");
 
 const minPersonalityValue = 0;
-const maxPersonalityValue = 10;
+const maxPersonalityValue = 100;
 
 const personalityTraitSchema = new Schema({
   description: { type: String, required: true },

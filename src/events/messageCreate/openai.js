@@ -17,10 +17,10 @@ module.exports = async (client, msg) => {
   const openai = new OpenAIApi(configuration);
 
   const minEmotionValue = 0;
-  const maxEmotionValue = 10;
+  const maxEmotionValue = 100;
 
   const minSentimentValue = 0;
-  const maxSentimentValue = 10;
+  const maxSentimentValue = 100;
 
   const respond_choice = "respond";
   const ignore_choice = "ignore";

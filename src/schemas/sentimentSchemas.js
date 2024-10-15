@@ -1,7 +1,7 @@
 const { Schema, model, Types } = require("mongoose");
 
 const minSentimentValue = 0;
-const maxSentimentValue = 10;
+const maxSentimentValue = 100;
 
 const sentimentSchema = new Schema({
   description: { type: String, required: true },
