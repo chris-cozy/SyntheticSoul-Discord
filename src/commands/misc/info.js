@@ -1,5 +1,7 @@
 const { EmbedBuilder } = require('discord.js');
 const { Client, Interaction } = require('discord.js');
+const { Configuration, OpenAIApi } = require("openai");
+const { Users, Self } = require("../../schemas/users");
 
 module.exports = {
     name: 'info',
@@ -13,43 +15,37 @@ module.exports = {
      * @param {Client} client 
      * @param {Interaction} interaction 
      */
-    callback: (client, interaction) => {
+    callback: async (client, interaction) => {
         //await interaction.deferReply();
 
-        try {
-            let verif;
-            if (client.user.verified) {
-                verif = 'true';
-            } else {
-                verif = 'false';
+        const configuration = new Configuration({
+            apiKey: process.env.OPENAI_API_KEY,
+          });
+          const openai = new OpenAIApi(configuration);
+
+          let self = await grabSelf(process.env.BOT_NAME);
+
+        async function grabSelf(agentName) {
+            let self = await Self.findOne({ name: agentName });
+        
+            if (!self) {
+              self = new Self({
+                name: process.env.BOT_NAME,
+                personality_matrix: JSON.parse(process.env.BOT_PERSONALITY_MATRIX),
+              });
+        
+              await self.save();
+              self = await Self.findOne({ name: agentName });
             }
-            // Create embed to send
+            return self;
+          }
+
+        try {
             const embed = new EmbedBuilder()
                 .setTitle(client.user.username)
                 .setColor('Random')
-                .setDescription(`an gpt-enabled discord assistant`)
+                .setDescription(self.identity)
                 .setURL('https://discord.js.org/#/')
-                .addFields(
-                    {
-                        name: 'presence',
-                        value: `${client.user.presence.status}`,
-                        inline: true
-                    },
-                    {
-                        name: 'verified',
-                        value: `${verif}`,
-                        inline: true
-                    },
-                    {
-                        name: 'tag',
-                        value: `${client.user.tag}`,
-                        inline: true
-                    },
-                    {
-                        name: 'timestamp of creation',
-                        value: `${client.user.createdAt}`
-                    }
-                )
                 .setThumbnail(client.user.displayAvatarURL())
                 .setTimestamp()
                 .setFooter({ text: `requested by ${interaction.user.tag} `, iconURL: `${interaction.user.displayAvatarURL()}` });
