@@ -11,6 +11,8 @@ module.exports = async (client) => {
     apiKey: process.env.OPENAI_API_KEY,
   });
   const openai = new OpenAIApi(configuration);
+  const minEmotionValue = 0;
+  const maxEmotionValue = 100;
 
   const getActivitySchema = () => ({
     type: "json_schema",
@@ -139,6 +141,28 @@ module.exports = async (client) => {
       setTimeout(activityLoop, activity.time);
     };
 
+    const decayRate = 60000; //one minute
+    const emotionDecay = async () => {
+      try {
+        const emotions = self.emotional_status.emotions.toObject();   
+        Object.entries(emotions).forEach(
+          ([emotion, data]) => {
+            if (data.value > minEmotionValue){
+              data.value -= 1;
+              self.emotional_status.emotions[emotion].value = data.value;
+              console.log(`Emotional decay: ${emotion} : ${data.value}`);
+            }
+          }
+        );
+
+        await self.save();
+      } catch (error) {
+        console.log(`Error during emotional decay: ${error}`);
+      }
+      setTimeout(emotionDecay, decayRate);
+    };
+
+    emotionDecay();
     activityLoop();
   } catch (error) {
     console.log(`There was an error: ${error}`);
