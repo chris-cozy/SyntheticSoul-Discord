@@ -27,6 +27,9 @@ module.exports = async (client, msg) => {
   const minSentimentValue = 0;
   const maxSentimentValue = 10;
 
+  const respond_choice = "respond";
+  const ignore_choice = "ignore";
+
   // Ignore msg if author is a bot or bot is not mentioned
   if (msg.author.bot || !msg.mentions.has(client.user.id)) {
     return;
@@ -359,6 +362,27 @@ module.exports = async (client, msg) => {
         properties: {
           summary: {
             description: "Updated perceived knowledge about the user",
+            type: "string",
+          },
+        },
+        additionalProperties: false,
+      },
+    },
+  });
+
+  const getResponseChoiceSchema = () => ({
+    type: "json_schema",
+    json_schema: {
+      name: "response_choice_object",
+      schema: {
+        type: "object",
+        properties: {
+          response_choice: {
+            description: "Respond or ignore",
+            type: "string",
+          },
+          reason: {
+            description: "Reason for choice",
             type: "string",
           },
         },
@@ -1284,12 +1308,12 @@ module.exports = async (client, msg) => {
 
     let ongoingConversationString =
       userMessages.length > 0
-        ? `This is what ${self.name} remembers of the ongoing conversation between them and ${
+        ? `This is what ${
+            self.name
+          } remembers of the ongoing conversation between them and ${
             user.name
           }: ${JSON.stringify(userMessages)}.`
-        : `This is ${self.name}'s and ${
-          user.name
-        }'s first time communicating.`;
+        : `This is ${self.name}'s and ${user.name}'s first time communicating.`;
 
     console.log("REVIEWED MESSAGE COUNT");
     console.log(userMessages.length);
@@ -1297,15 +1321,19 @@ module.exports = async (client, msg) => {
     // MESSAGE ANALYSIS
     let initialEmotionQuery = {
       role: "user",
-      content: `${
-        self.name
-      }'s current activity is ${JSON.stringify(
+      content: `${self.name}'s current activity is ${JSON.stringify(
         self.activity_status
-      )}. These are ${self.name}'s personality traits: ${personalityString}. This is how ${self.name} views themselves: ${self.identity}. ${
+      )}. These are ${
+        self.name
+      }'s personality traits: ${personalityString}. This is how ${
+        self.name
+      } views themselves: ${self.identity}. ${
         self.name
       }'s current emotional state is ${JSON.stringify(
         self.emotional_status
-      )}. ${ongoingConversationString}. This is what ${self.name} knows about ${user.name}: ${user.summary}. ${self.name} currently has ${JSON.stringify(
+      )}. ${ongoingConversationString}. This is what ${self.name} knows about ${
+        user.name
+      }: ${user.summary}. ${self.name} currently has ${JSON.stringify(
         user.sentiment_status
       )} towards ${user.name}. It is ${receiveDate.toISOString()}. ${
         user.name
@@ -1363,35 +1391,92 @@ module.exports = async (client, msg) => {
       msg.reply("Error generating response");
     }
 
-    // RESPONSE CRAFTING
+    // RESPONSE CHOICE
 
-    let messageResponseQuery = {
+    let responseChoiceQuery = {
       role: "user",
-      content: `The way ${self.name} speaks, types, and uses punctuation reflects their personality traits and emotional status. Given this information, how would ${self.name} respond back, and with what intended purpose and intended tone? Provide the response, intended purpose, and intended tone in a JSON object with the properties of message, purpose, and tone.`,
+      content: `${self.name} can choose to respond to or ignore this message. Based on their personality, current emotional state, and sentiment, what choice will they make? Provide either "respond" or "ignore", and the reason for the choice, in a JSON object with the properties response_choice and reason.`,
     };
 
-    innerDialogue.push(messageResponseQuery);
+    innerDialogue.push(responseChoiceQuery);
 
-    console.log("MESSAGE RESPONSE");
-    const messageResponseQueryResponse =
+    console.log("RESPONSE CHOICE");
+    const responseChoiceQueryResponse =
       await getStructuredInnerDialogueResponse(
         innerDialogue,
-        getMessageSchema()
+        getResponseChoiceSchema()
       );
 
     innerDialogue.push({
       role: "assistant",
-      content: `${JSON.stringify(messageResponseQueryResponse)}`,
+      content: `${JSON.stringify(responseChoiceQueryResponse)}`,
     });
 
-    if (!messageResponseQueryResponse) {
+    if (!responseChoiceQueryResponse) {
       msg.reply("Error generating response");
     }
 
+    let messageResponseQueryResponse;
+    if (responseChoiceQueryResponse.response_choice == respond_choice) {
+      // RESPONSE CRAFTING
+
+      let messageResponseQuery = {
+        role: "user",
+        content: `The way ${self.name} speaks, types, and uses punctuation reflects their personality traits and emotional status. Given this information, how would ${self.name} respond back, and with what intended purpose and intended tone? Provide the response, intended purpose, and intended tone in a JSON object with the properties of message, purpose, and tone.`,
+      };
+
+      innerDialogue.push(messageResponseQuery);
+
+      console.log("MESSAGE RESPONSE");
+      messageResponseQueryResponse =
+        await getStructuredInnerDialogueResponse(
+          innerDialogue,
+          getMessageSchema()
+        );
+
+      innerDialogue.push({
+        role: "assistant",
+        content: `${JSON.stringify(messageResponseQueryResponse)}`,
+      });
+
+      if (!messageResponseQueryResponse) {
+        msg.reply("Error generating response");
+      }
+
+      // REFLECTION
+      let finalEmotionQuery = {
+        role: "user",
+        content: `What is ${self.name}'s emotional state after sending their response? Provide the new object (only the emotions whose value properties have changed, whether increased or decreased), and the reason behind the current emotional state. Scale: ${minSentimentValue} (lowest intensity) to ${maxSentimentValue} (highest intensity).`,
+      };
+
+      innerDialogue.push(finalEmotionQuery);
+
+      console.log("FINAL EMOTIONAL RESPONSE");
+      const finalEmotionQueryResponse =
+        await getStructuredInnerDialogueResponse(
+          innerDialogue,
+          getEmotionStatusSchema()
+        );
+
+      innerDialogue.push({
+        role: "assistant",
+        content: `${JSON.stringify(finalEmotionQueryResponse)}`,
+      });
+
+      if (!finalEmotionQueryResponse) {
+        msg.reply("Error reflecting on emotion");
+      }
+
+      self.emotional_status = new EmotionalStatus(
+        deepMerge(self.emotional_status, finalEmotionQueryResponse)
+      );
+
+      await msg.channel.sendTyping();
+    }else if (responseChoiceQueryResponse.response_choice == ignore_choice){
     // REFLECTION
     let finalEmotionQuery = {
       role: "user",
-      content: `What is ${self.name}'s emotional state after sending their response? Provide the new object (only the emotions whose value properties have changed, whether increased or decreased), and the reason behind the current emotional state. Scale: ${minSentimentValue} (lowest intensity) to ${maxSentimentValue} (highest intensity).`,
+      content: `What is ${self.name}'s emotional state after ignoring the message? Provide the new object (only the emotions whose value properties have changed, whether increased or decreased), and the reason behind the current emotional state. Scale: ${minSentimentValue} (lowest intensity) to ${maxSentimentValue} (highest intensity).`,
     };
 
     innerDialogue.push(finalEmotionQuery);
@@ -1414,8 +1499,7 @@ module.exports = async (client, msg) => {
     self.emotional_status = new EmotionalStatus(
       deepMerge(self.emotional_status, finalEmotionQueryResponse)
     );
-
-    await msg.channel.sendTyping();
+    }
 
     let sentimentQuery = {
       role: "user",
@@ -1443,10 +1527,9 @@ module.exports = async (client, msg) => {
       deepMerge(user.sentiment_status, sentimentQueryResponse)
     );
 
-
     let summaryQuery = {
       role: "user",
-      content: `Add any new key information ${self.name} has learned about ${user.name} from this message exchange, to the summary of what they know about ${user.name}: ${user.summary}. Provide the new object.`,
+      content: `Add any new key information ${self.name} has learned about ${user.name} from this message exchange, to the summary of what they know about ${user.name}: ${user.summary}. Provide the updated summary in a JSON object with the property 'summary'.`,
     };
 
     innerDialogue.push(summaryQuery);
@@ -1468,10 +1551,9 @@ module.exports = async (client, msg) => {
 
     user.summary = summaryQueryResponse.summary;
 
-
     let identityQuery = {
       role: "user",
-      content: `Add any new information ${self.name} has learned about themselves from this message exchange, to their self-identity ${self.identity}. Provide the new object.`,
+      content: `Add any new information ${self.name} has learned about themselves from this message exchange, to their current self-identity ${self.identity}. Provide the updated identity in a JSON object with the property 'identity'.`,
     };
 
     innerDialogue.push(identityQuery);
@@ -1493,7 +1575,6 @@ module.exports = async (client, msg) => {
 
     self.identity = identityQueryResponse.identity;
 
-
     let incomingMessage = new Messages({
       ...messageReceivedQueryResponse,
       sender: user.name,
@@ -1501,18 +1582,25 @@ module.exports = async (client, msg) => {
       is_bot: false,
     });
 
-    let responseDate = new Date();
-    let messageResponse = new Messages({
-      ...messageResponseQueryResponse,
-      sender: self.name,
-      timestamp: responseDate,
-      is_bot: true,
-    });
+    userConversation.messages.push(incomingMessage);
+    
+    if (responseChoiceQueryResponse.response_choice == respond_choice){
+      let responseDate = new Date();
+      let messageResponse = new Messages({
+        ...messageResponseQueryResponse,
+        sender: self.name,
+        timestamp: responseDate,
+        is_bot: true,
+      });
+  
+      userConversation.messages.push(messageResponse);
 
-    userConversation.messages.push(incomingMessage, messageResponse);
+      msg.reply(messageResponseQueryResponse.message);
+    }else if (responseChoiceQueryResponse.response_choice == ignore_choice){
+      msg.reply(`System: ${self.name} has chosen to ignore your message.`);
+    }
 
     await Promise.all([self.save(), user.save(), userConversation.save()]);
-    msg.reply(messageResponseQueryResponse.message);
   }
 
   function deepMerge(target, source) {
