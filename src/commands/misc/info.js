@@ -1,60 +1,61 @@
-const { EmbedBuilder } = require('discord.js');
-const { Client, Interaction } = require('discord.js');
+const { EmbedBuilder } = require("discord.js");
+const { Client, Interaction } = require("discord.js");
 const { Configuration, OpenAIApi } = require("openai");
 const { Users, Self } = require("../../schemas/users");
 
 module.exports = {
-    name: 'info',
-    description: 'information about bot',
-    devonly: false,
-    testOnly: false,
-    deleted: false,
+  name: "info",
+  description: "information about bot",
+  devonly: false,
+  testOnly: false,
+  deleted: false,
 
-    /**
-     * @brief Send an embed with bot information
-     * @param {Client} client 
-     * @param {Interaction} interaction 
-     */
-    callback: async (client, interaction) => {
-        //await interaction.deferReply();
+  /**
+   * @brief Send an embed with bot information
+   * @param {Client} client
+   * @param {Interaction} interaction
+   */
+  callback: async (client, interaction) => {
+    //await interaction.deferReply();
 
-        const configuration = new Configuration({
-            apiKey: process.env.OPENAI_API_KEY,
-          });
-          const openai = new OpenAIApi(configuration);
+    const configuration = new Configuration({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+    const openai = new OpenAIApi(configuration);
 
-          let self = await grabSelf(process.env.BOT_NAME);
+    let self = await grabSelf(process.env.BOT_NAME);
 
-        async function grabSelf(agentName) {
-            let self = await Self.findOne({ name: agentName });
-        
-            if (!self) {
-              self = new Self({
-                name: process.env.BOT_NAME,
-                personality_matrix: JSON.parse(process.env.BOT_PERSONALITY_MATRIX),
-              });
-        
-              await self.save();
-              self = await Self.findOne({ name: agentName });
-            }
-            return self;
-          }
+    async function grabSelf(agentName) {
+      let self = await Self.findOne({ name: agentName });
 
-        try {
-            const embed = new EmbedBuilder()
-                .setTitle(client.user.username)
-                .setColor('Random')
-                .setDescription(self.identity)
-                .setURL('https://discord.js.org/#/')
-                .setThumbnail(client.user.displayAvatarURL())
-                .setTimestamp()
-                .setFooter({ text: `requested by ${interaction.user.tag} `, iconURL: `${interaction.user.displayAvatarURL()}` });
+      if (!self) {
+        self = new Self({
+          name: process.env.BOT_NAME,
+          personality_matrix: JSON.parse(process.env.BOT_PERSONALITY_MATRIX),
+        });
 
-            interaction.reply({ embeds: [embed] });
+        await self.save();
+        self = await Self.findOne({ name: agentName });
+      }
+      return self;
+    }
 
-        } catch (error) {
-            console.log(`there was an error: ${error}`);
-        }
+    try {
+      const embed = new EmbedBuilder()
+        .setTitle(client.user.username)
+        .setColor("Random")
+        .setDescription(self.identity)
+        .setURL("https://github.com/chris-cozy/SyntheticSoul-Discord")
+        .setThumbnail(client.user.displayAvatarURL())
+        .setTimestamp()
+        .setFooter({
+          text: `requested by ${interaction.user.tag} `,
+          iconURL: `${interaction.user.displayAvatarURL()}`,
+        });
 
-    },
-}
+      interaction.reply({ embeds: [embed] });
+    } catch (error) {
+      console.log(`there was an error: ${error}`);
+    }
+  },
+};
