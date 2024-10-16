@@ -1,91 +1,12 @@
 const { ActivityType, Client } = require("discord.js");
 const { Configuration, OpenAIApi } = require("openai");
 const { Self, Activity } = require("../../schemas/users");
-
+const {openai, MIN_EMOTION_VALUE, MAX_EMOTION_VALUE, getActivitySchema, getItemSchema, getReasonSchema, getCategorySchema} = require("../../constants/constants");
 /**
  * @brief Alert that the bot is online, and set the status
  * @param {Client} client - The bot
  */
 module.exports = async (client) => {
-  const configuration = new Configuration({
-    apiKey: process.env.OPENAI_API_KEY,
-  });
-  const openai = new OpenAIApi(configuration);
-  const minEmotionValue = 0;
-  const maxEmotionValue = 100;
-
-  const getActivitySchema = () => ({
-    type: "json_schema",
-    json_schema: {
-      name: "activity",
-      schema: {
-        type: "object",
-        properties: {
-          activity: {
-            description: "The media being consumed",
-            type: "string",
-          },
-          duration: {
-            description: "The duration of time for the activity",
-            type: "number",
-          },
-        },
-        additionalProperties: false,
-      },
-    },
-  });
-
-  const getItemSchema = () => ({
-    type: "json_schema",
-    json_schema: {
-      name: "item",
-      schema: {
-        type: "object",
-        properties: {
-          item: {
-            description: "The item being used",
-            type: "string",
-          },
-        },
-        additionalProperties: false,
-      },
-    },
-  });
-
-  const getReasonSchema = () => ({
-    type: "json_schema",
-    json_schema: {
-      name: "reason",
-      schema: {
-        type: "object",
-        properties: {
-          reason: {
-            description: "The reason behind the choices.",
-            type: "string",
-          },
-        },
-        additionalProperties: false,
-      },
-    },
-  });
-
-  const getCategorySchema = () => ({
-    type: "json_schema",
-    json_schema: {
-      name: "category",
-      schema: {
-        type: "object",
-        properties: {
-          category: {
-            description:
-              "The desired category of activity. Either watching, playing, or listening.",
-            type: "string",
-          },
-        },
-        additionalProperties: false,
-      },
-    },
-  });
 
   try {
     class Item {
@@ -385,7 +306,7 @@ module.exports = async (client) => {
       try {
         const emotions = self.emotional_status.emotions.toObject();
         Object.entries(emotions).forEach(([emotion, data]) => {
-          if (data.value > minEmotionValue) {
+          if (data.value > MIN_EMOTION_VALUE) {
             data.value -= 1;
             self.emotional_status.emotions[emotion].value = data.value;
             console.log(`Emotional decay: ${emotion} : ${data.value}`);
