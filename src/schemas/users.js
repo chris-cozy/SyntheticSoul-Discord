@@ -16,6 +16,10 @@ const activitySchema = new Schema({
     type: String,
     required: false,
   },
+  reason: {
+    type: String,
+    required: true,
+  },
   start_time: {
     type: Date,
     required: false,
