@@ -1,50 +1,12 @@
 const { ActivityType, Client } = require("discord.js");
 const { Configuration, OpenAIApi } = require("openai");
 const { Self, Activity } = require("../../schemas/users");
-
+const {openai, MIN_EMOTION_VALUE, MAX_EMOTION_VALUE, getActivitySchema, getItemSchema, getReasonSchema, getCategorySchema} = require("../../constants/constants");
 /**
  * @brief Alert that the bot is online, and set the status
  * @param {Client} client - The bot
  */
 module.exports = async (client) => {
-  const configuration = new Configuration({
-    apiKey: process.env.OPENAI_API_KEY,
-  });
-  const openai = new OpenAIApi(configuration);
-  const minEmotionValue = 0;
-  const maxEmotionValue = 100;
-
-  const getActivitySchema = () => ({
-    type: "json_schema",
-    json_schema: {
-      name: "activity",
-      schema: {
-        type: "object",
-        properties: {
-          name: {
-            description:
-              "The activity being done. There are restrictions on this depending on the corresponding category. watching - must be the title of a show, movie, youtube video, or stream (i.e Kai Cenat live on Twitch). streaming - must be the title of a game. playing - must be the title of a game. custom - can be any activity that doesn't fit in the other categories. listening - must be the title of a song, podcast, or audiobook.",
-            type: "string",
-          },
-          category: {
-            description: "Which category the activity falls into.",
-            type: "string",
-            enum: ["watching", "streaming", "playing", "custom", "listening"],
-          },
-          time: {
-            description:
-              "Amount of time to perform the action for (in milliseconds)",
-            type: "number",
-          },
-          item: {
-            desciption: "The room item being used",
-            type: "string",
-          },
-        },
-        additionalProperties: false,
-      },
-    },
-  });
 
   try {
     class Item {
@@ -88,72 +50,270 @@ module.exports = async (client) => {
     room.addItem(bed);
     room.addItem(floor);
 
-    const activityQuery = [
+    console.log(`${client.user.tag} is online.`);
+
+    const getActivitiesForDay = async (date) => {
+      try {
+        const startOfDay = new Date(date.setHours(0, 0, 0, 0)); // 12:00 AM
+        const endOfDay = new Date(date.setHours(23, 59, 59, 999)); // 11:59:59 PM
+
+        const activities = await Activity.find({
+          start_time: { $gte: startOfDay, $lte: endOfDay },
+        });
+
+        return activities;
+      } catch (error) {
+        console.error(`Error fetching activities for the day: ${error}`);
+        return [];
+      }
+    };
+
+    let today = new Date();
+    let todaysActivities = await getActivitiesForDay(today);
+    let categoryQuery =
       {
         role: "user",
         content: `${
           self.name
-        } is alone in their room that has these items in it: ${JSON.stringify(
+        } is in their room with these items in it: ${JSON.stringify(
           room.items
         )}. This is ${self.name}'s personality: ${JSON.stringify(
-          self.personality_matrix
-        )}. Given this information, what does ${
+          self.personality_matrix.toObject()
+        )}. This is ${self.name}'s emotional status: ${JSON.stringify(
+          self.emotional_status.toObject()
+        )}. These are the activities they have done today: ${JSON.stringify(
+          todaysActivities
+        )}. What category of activity does ${
           self.name
-        } want to do? Provide the name of the activity (If the category is watching - name must be the name of a show, movie, youtube video, or stream (i.e iRobot, A Movie). if it is streaming or playing - name must be the name of a game. if it is custom - name can be any activity that doesn't fit in the other categories. if it is listening - name must be the name of a song, podcast, or audiobook (i.e 'Chasing Cars' by Snow Patrol)), category of the activity, length of time the activity will be performed for (in milliseconds), and item the activity is being performed on. Respond with the following JSON object: { name: string, category: string, time: number, item: string}. `,
-      },
-    ];
-    const activitySchema = getActivitySchema();
+        } want to do next? Provide the name of the category, either watching, playing, or listening. Respond with a JSON object with the property category. `,
+      };
 
-    console.log(`${client.user.tag} is online.`);
+    let innerDialogue = [categoryQuery];
 
-    let activity = await getActivity(activityQuery, activitySchema);
-    let activityType = getType(activity.category);
+    let categoryQueryResponse = await getStructuredQueryResponse(
+      innerDialogue,
+      getCategorySchema()
+    );
 
+    innerDialogue.push({
+      role: "assistant",
+      content: `${JSON.stringify(categoryQueryResponse)}`,
+    });
+
+    const activityQueries = {
+      "listening": `Provide the name of a song ${self.name} is interested in listening to, and the length of time she will, in milliseconds. Respond with a JSON object with the properties activity and duration.`,
+      "playing": `Provide the name of a video game ${self.name} is interested in playing, and the length of time she will, in milliseconds. Respond with a JSON object with the properties activity and duration.`,
+      "watching": `Provide the name of a show or movie ${self.name} is interested in watching, and the length of time she will, in milliseconds. Respond with a JSON object with the properties activity and duration.`
+    };
+
+    let activityQuery = activityQueries[categoryQueryResponse.category];
+
+    innerDialogue.push({
+      role: "user",
+      content: activityQuery,
+    });
+
+    let activityQueryResponse = await getStructuredQueryResponse(
+      innerDialogue,
+      getActivitySchema()
+    );
+
+    innerDialogue.push({
+      role: "assistant",
+      content: `${JSON.stringify(activityQueryResponse)}`,
+    });
+
+    let activityType = getType(categoryQueryResponse.category);
+
+    let itemQuery = `Which item in ${
+      self.name
+    }'s room do they want to use for ${categoryQueryResponse.category} ${
+      activityQueryResponse.activity
+    }? They can choose from ${room.items.filter((item) =>
+      item.activities.includes(categoryQueryResponse.category)
+    )}. Respond with the item name in a JSON object with the property item.`;
+
+    innerDialogue.push({
+      role: "user",
+      content: itemQuery,
+    });
+
+    let itemQueryResponse = await getStructuredQueryResponse(
+      innerDialogue,
+      getItemSchema()
+    );
+
+    innerDialogue.push({
+      role: "assistant",
+      content: `${JSON.stringify(itemQueryResponse)}`,
+    });
+
+    let reasonQuery = `Give a short explanation as to why ${self.name} made these choices. Respond with  a JSON object with the property reason.`;
+
+    innerDialogue.push({
+      role: "user",
+      content: reasonQuery,
+    });
+
+    let reasonQueryResponse = await getStructuredQueryResponse(
+      innerDialogue,
+      getReasonSchema()
+    );
+
+    client.user.setActivity({
+      name: activityQueryResponse.activity,
+      type: activityType,
+    });
+
+    self.activity_status = new Activity({
+      name: activityQueryResponse.activity,
+      category: categoryQueryResponse.category,
+      reason: reasonQueryResponse.reason,
+      item: itemQueryResponse.item,
+    });
+
+    const activityRecord = new Activity({
+      name: activityQueryResponse.activity,
+      category: categoryQueryResponse.category,
+      reason: reasonQueryResponse.reason,
+      item: itemQueryResponse.item,
+    });
+
+    // ACTIVITY LOOP //
     const activityLoop = async () => {
       try {
-        activity = await getActivity(activityQuery, activitySchema);
+        self = await grabSelf(process.env.BOT_NAME);
+        today = new Date();
+        todaysActivities = await getActivitiesForDay(today);
+        categoryQuery =
+          {
+            role: "user",
+            content: `${
+              self.name
+            } is in their room with these items in it: ${JSON.stringify(
+              room.items
+            )}. This is ${self.name}'s personality: ${JSON.stringify(
+              self.personality_matrix.toObject()
+            )}. This is ${self.name}'s emotional status: ${JSON.stringify(
+              self.emotional_status.toObject()
+            )}. These are the activities they have done today: ${JSON.stringify(
+              todaysActivities
+            )}. What category of activity does ${
+              self.name
+            } want to do next? A variety of categorys is good for mental stimulation. Provide the name of the category, either watching, playing, or listening. Respond with a JSON object with the property category. `,
+          };
 
-        if (!activity) {
-          console.log("Activity returned null, skipping update.");
-          return;
-        }
+        innerDialogue = [categoryQuery];
 
-        console.log(JSON.stringify(activity));
+        categoryQueryResponse = await getStructuredQueryResponse(
+          innerDialogue,
+          getCategorySchema()
+        );
 
-        // Get the activity type
-        activityType = getType(activity.category);
+        // Check if categoryQueryResponse is valid
+    if (!categoryQueryResponse || !categoryQueryResponse.category) {
+      console.log("Error: categoryQueryResponse is null or undefined.");
+      console.log(categoryQueryResponse); // Log the response for debugging
+      return; // Exit the loop if the response is invalid
+    }
+
+        innerDialogue.push({
+          role: "assistant",
+          content: `${JSON.stringify(categoryQueryResponse)}`,
+        });
+
+      activityQuery = activityQueries[categoryQueryResponse.category];
+
+        innerDialogue.push({
+          role: "user",
+          content: activityQuery,
+        });
+
+       activityQueryResponse = await getStructuredQueryResponse(
+          innerDialogue,
+          getActivitySchema()
+        );
+
+        innerDialogue.push({
+          role: "assistant",
+          content: `${JSON.stringify(activityQueryResponse)}`,
+        });
+
+        activityType = getType(categoryQueryResponse.category);
+
+        itemQuery = `Which item in ${
+          self.name
+        }'s room do they want to use for ${categoryQueryResponse.category} ${
+          activityQueryResponse.activity
+        }? They can choose from ${room.items.filter((item) =>
+          item.activities.includes(categoryQueryResponse.category)
+        )}. Respond with the item name in a JSON object with the property item.`;
+
+        innerDialogue.push({
+          role: "user",
+          content: itemQuery,
+        });
+
+        itemQueryResponse = await getStructuredQueryResponse(
+          innerDialogue,
+          getItemSchema()
+        );
+
+        innerDialogue.push({
+          role: "assistant",
+          content: `${JSON.stringify(itemQueryResponse)}`,
+        });
+
+        innerDialogue.push({
+          role: "user",
+          content: reasonQuery,
+        });
+
+        reasonQueryResponse = await getStructuredQueryResponse(
+          innerDialogue,
+          getReasonSchema()
+        );
 
         client.user.setActivity({
-          name: activity.name,
+          name: activityQueryResponse.activity,
           type: activityType,
         });
 
         self.activity_status = new Activity({
-          name: activity.name,
-          category: activity.category,
-          item: activity.item,
+          name: activityQueryResponse.activity,
+          category: categoryQueryResponse.category,
+          reason: reasonQueryResponse.reason,
+          item: itemQueryResponse.item,
+        });
+
+        const activityRecord = new Activity({
+          name: activityQueryResponse.activity,
+          category: categoryQueryResponse.category,
+          reason: reasonQueryResponse.reason,
+          item: itemQueryResponse.item,
         });
 
         await self.save();
+        await activityRecord.save();
       } catch (error) {
         console.log(`Error during activity update: ${error}`);
       }
-      setTimeout(activityLoop, activity.time);
+      setTimeout(activityLoop, activityQueryResponse.duration);
     };
 
+    // EMOTIONAL DECAY //
     const decayRate = 60000; //one minute
     const emotionDecay = async () => {
       try {
-        const emotions = self.emotional_status.emotions.toObject();   
-        Object.entries(emotions).forEach(
-          ([emotion, data]) => {
-            if (data.value > minEmotionValue){
-              data.value -= 1;
-              self.emotional_status.emotions[emotion].value = data.value;
-              console.log(`Emotional decay: ${emotion} : ${data.value}`);
-            }
+        self = await grabSelf(process.env.BOT_NAME);
+        const emotions = self.emotional_status.emotions.toObject();
+        Object.entries(emotions).forEach(([emotion, data]) => {
+          if (data.value > MIN_EMOTION_VALUE) {
+            data.value -= 1;
+            self.emotional_status.emotions[emotion].value = data.value;
+            console.log(`Emotional decay: ${emotion} : ${data.value}`);
           }
-        );
+        });
 
         await self.save();
       } catch (error) {
@@ -200,13 +360,18 @@ module.exports = async (client) => {
     }
   }
 
-  async function getActivity(query, schema) {
+  async function getStructuredQueryResponse(query, schema) {
     try {
       const response = await openai.createChatCompletion({
         model: "gpt-4o-mini",
         messages: query,
         response_format: schema,
       });
+      console.log("---");
+      console.log(
+        JSON.stringify(JSON.parse(response.data.choices[0].message.content))
+      );
+      console.log("---");
 
       const parsed = JSON.parse(
         response.data.choices[0].message.content.trim()

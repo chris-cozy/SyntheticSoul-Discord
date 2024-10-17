@@ -1,28 +1,20 @@
 const { EmbedBuilder } = require("discord.js");
 const { Client, Interaction } = require("discord.js");
-const { Configuration, OpenAIApi } = require("openai");
 const { Users, Self } = require("../../schemas/users");
 
 module.exports = {
-  name: "info",
-  description: "information about bot",
+  name: "emotion",
+  description: "information about the program's emotional status",
   devonly: false,
   testOnly: false,
   deleted: false,
 
   /**
-   * @brief Send an embed with bot information
+   * @brief Send an embed with bot emotiong information
    * @param {Client} client
    * @param {Interaction} interaction
    */
   callback: async (client, interaction) => {
-    //await interaction.deferReply();
-
-    const configuration = new Configuration({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-    const openai = new OpenAIApi(configuration);
-
     let self = await grabSelf(process.env.BOT_NAME);
 
     async function grabSelf(agentName) {
@@ -41,10 +33,11 @@ module.exports = {
     }
 
     try {
-      const embed = new EmbedBuilder()
+        
+      let embed = new EmbedBuilder()
         .setTitle(client.user.username)
         .setColor("Random")
-        .setDescription(self.identity)
+        .setDescription(self.emotional_status.reason)
         .setURL("https://github.com/chris-cozy/SyntheticSoul-Discord")
         .setThumbnail(client.user.displayAvatarURL())
         .setTimestamp()
@@ -52,6 +45,13 @@ module.exports = {
           text: `requested by ${interaction.user.tag} `,
           iconURL: `${interaction.user.displayAvatarURL()}`,
         });
+
+      const emotions = self.emotional_status.emotions.toObject();
+      Object.entries(emotions).forEach(([emotion, data]) => {
+        if (self.emotional_status.emotions[emotion].value >= 0) {
+          embed.addFields({ name: emotion, value: `${self.emotional_status.emotions[emotion].value}`, inline: true });
+        }
+      });
 
       interaction.reply({ embeds: [embed] });
     } catch (error) {
