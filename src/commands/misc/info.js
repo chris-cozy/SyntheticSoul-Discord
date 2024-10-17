@@ -23,9 +23,9 @@ module.exports = {
     });
     const openai = new OpenAIApi(configuration);
 
-    let self = await grabSelf(process.env.BOT_NAME);
+    let self = await GrabSelf(process.env.BOT_NAME);
 
-    async function grabSelf(agentName) {
+    async function GrabSelf(agentName) {
       let self = await Self.findOne({ name: agentName });
 
       if (!self) {
@@ -49,7 +49,7 @@ module.exports = {
         .setThumbnail(client.user.displayAvatarURL())
         .setTimestamp()
         .setFooter({
-          text: `requested by ${interaction.user.tag} `,
+          text: `requested by ${interaction.user.username} `,
           iconURL: `${interaction.user.displayAvatarURL()}`,
         });
 
