@@ -15,9 +15,9 @@ module.exports = {
    * @param {Interaction} interaction
    */
   callback: async (client, interaction) => {
-    let self = await grabSelf(process.env.BOT_NAME);
+    let self = await GrabSelf(process.env.BOT_NAME);
 
-    async function grabSelf(agentName) {
+    async function GrabSelf(agentName) {
       let self = await Self.findOne({ name: agentName });
 
       if (!self) {
@@ -32,30 +32,35 @@ module.exports = {
       return self;
     }
 
+    let embed;
+
     try {
         
-      let embed = new EmbedBuilder()
-        .setTitle(client.user.username)
+      embed = new EmbedBuilder()
+        .setTitle(`${client.user.username}'s current emotions`)
         .setColor("Random")
-        .setDescription(self.emotional_status.reason)
         .setURL("https://github.com/chris-cozy/SyntheticSoul-Discord")
         .setThumbnail(client.user.displayAvatarURL())
         .setTimestamp()
         .setFooter({
-          text: `requested by ${interaction.user.tag} `,
+          text: `requested by ${interaction.user.username} `,
           iconURL: `${interaction.user.displayAvatarURL()}`,
         });
-
+        
       const emotions = self.emotional_status.emotions.toObject();
-      Object.entries(emotions).forEach(([emotion, data]) => {
-        if (self.emotional_status.emotions[emotion].value >= 0) {
-          embed.addFields({ name: emotion, value: `${self.emotional_status.emotions[emotion].value}`, inline: true });
-        }
-      });
-
+      for (const emotion in emotions) {
+        // Skip the _id field, as it's not an emotion
+        if (emotion === "_id") continue;
+      
+        const value = emotions[emotion].value;
+        console.log(`${emotion}: ${value}`);
+        embed.addFields({ name: `${emotion}`, value: value.toString(), inline: true });
+      }
       interaction.reply({ embeds: [embed] });
+
     } catch (error) {
-      console.log(`there was an error: ${error}`);
+      interaction.reply({ embeds: [embed] });
+      console.log(`Error - ${error}`);
     }
   },
 };
