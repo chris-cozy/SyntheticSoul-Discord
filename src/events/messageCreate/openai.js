@@ -4,31 +4,45 @@ const { Conversations, Messages } = require("../../schemas/conversations");
 const { Users, Self } = require("../../schemas/users");
 const { EmotionStatus } = require("../../schemas/emotionSchemas");
 const { SentimentStatus } = require("../../schemas/sentimentSchemas");
-const {openai, MIN_EMOTION_VALUE, MAX_EMOTION_VALUE, MIN_SENTIMENT_VALUE, MAX_SENTIMENT_VALUE, CHOICE_RESPOND, CHOICE_IGNORE, getEmotionStatusSchema, getMessageSchema, getSummarySchema, getResponseChoiceSchema, getIdentitySchema, getSentimentStatusSchema} = require("../../constants/constants");
- 
+const {
+  openai,
+  MIN_EMOTION_VALUE,
+  MAX_EMOTION_VALUE,
+  MIN_SENTIMENT_VALUE,
+  MAX_SENTIMENT_VALUE,
+  CHOICE_RESPOND,
+  CHOICE_IGNORE,
+  getEmotionStatusSchema,
+  getMessageSchema,
+  getSummarySchema,
+  getResponseChoiceSchema,
+  getIdentitySchema,
+  getSentimentStatusSchema,
+  getPersonalityStatusSchema,
+  MIN_PERSONALITY_VALUE,
+  MAX_PERSONALITY_VALUE,
+} = require("../../constants/constants");
+
 /**
  * @brief Handle a message sent in the server.
  * @param {Client} client - The bot
  * @param {Message} msg - The message which was sent
  */
 module.exports = async (client, msg) => {
-
   // Ignore msg if author is a bot or bot is not mentioned
   if (msg.author.bot || !msg.mentions.has(client.user.id)) {
     return;
   }
 
   async function handleUserMessage() {
-    let self = await grabSelf(process.env.BOT_NAME);
-    let user = await grabUser(msg.author.id);
-
-    const personalityString = mergePersonality(self, user);
+    let self = await GrabSelf(process.env.BOT_NAME);
+    let user = await GrabUser(msg.author.id);
 
     let userConversation =
       (await Conversations.findOne({
         user_id: user.user_id,
       })) || new Conversations({ user_id: user.user_id });
-    const spliceBound = 15;
+    const spliceBound = 5;
     let userMessages = userConversation.messages.slice(-spliceBound);
 
     //console.log("USER MESSAGES");
@@ -48,24 +62,24 @@ module.exports = async (client, msg) => {
     console.log("REVIEWED MESSAGE COUNT");
     console.log(userMessages.length);
 
+    let alteredPersonality = await AlterPersonality(self, user);
+
+    let selfContext = `${self.name}'s current activity is ${JSON.stringify(
+      self.activity_status
+    )}. Their current personality traits are: ${JSON.stringify(
+      alteredPersonality
+    )}. ${self.name}'s current emotional state is ${JSON.stringify(
+      self.emotional_status
+    )}.`;
+
     // MESSAGE ANALYSIS
     let initialEmotionQuery = {
       role: "user",
-      content: `${self.name}'s current activity is ${JSON.stringify(
-        self.activity_status
-      )}. These are ${
-        self.name
-      }'s personality traits: ${personalityString}. This is how ${
-        self.name
-      } views themselves: ${self.identity}. ${
-        self.name
-      }'s current emotional state is ${JSON.stringify(
-        self.emotional_status
-      )}. ${ongoingConversationString}. This is what ${self.name} knows about ${
+      content: `${selfContext} This is what ${self.name} knows about ${
         user.name
-      }: ${user.summary}. ${self.name} currently has ${JSON.stringify(
-        user.sentiment_status
-      )} towards ${user.name}. It is ${receiveDate.toISOString()}. ${
+      }: ${
+        user.summary
+      }. ${ongoingConversationString} It is ${receiveDate.toISOString()}. ${
         user.name
       } just sent a message to ${self.name}: ${
         msg.content
@@ -78,7 +92,7 @@ module.exports = async (client, msg) => {
 
     console.log("INITIAL EMOTIONAL RESPONSE");
     const initialEmotionQueryResponse =
-      await getStructuredInnerDialogueResponse(
+      await GetStructuredInnerDialogueResponse(
         innerDialogue,
         getEmotionStatusSchema()
       );
@@ -94,50 +108,52 @@ module.exports = async (client, msg) => {
     }
 
     self.emotional_status = new EmotionStatus(
-      deepMerge(self.emotional_status, initialEmotionQueryResponse)
+      DeepMerge(self.emotional_status, initialEmotionQueryResponse)
     );
 
     // RECEIVED PROCESSING
-    let messageReceivedQuery = {
-      role: "user",
-      content: `Given ${self.name}'s personality, current emotional state, and sentiments toward ${user.name}, how would ${self.name} perceive the purpose and tone of ${user.name}'s new message? Provide the message "${msg.content}", purpose, and tone in a JSON object with the properties of message, purpose, and tone.`,
-    };
+    let messageQueries = [
+      {
+        role: "user",
+        content: `This is ${self.name}'s personality: ${alteredPersonality}. This is their current emotional state: ${self.emotional_status}. This is what they think about ${user.name}: ${user.summary}. This is the ongoing conversation between them: ${ongoingConversationString}. How would ${self.name} perceive the purpose and tone of ${user.name}'s new message: ${msg.content}. Provide the message "${msg.content}", purpose, and tone in a JSON object with the properties of message, purpose, and tone.`,
+      },
+    ];
 
-    innerDialogue.push(messageReceivedQuery);
+    //innerDialogue.push(messageReceivedQuery);
 
     console.log("MESSAGE RECEIVED INTERPRETATION");
     const messageReceivedQueryResponse =
-      await getStructuredInnerDialogueResponse(
-        innerDialogue,
+      await GetStructuredInnerDialogueResponse(
+        messageQueries,
         getMessageSchema()
       );
-
-    innerDialogue.push({
-      role: "assistant",
-      content: `${JSON.stringify(messageReceivedQueryResponse)}`,
-    });
 
     if (!messageReceivedQueryResponse) {
       msg.reply("Error generating response");
     }
 
+    messageQueries.push({
+      role: "assistant",
+      content: `${JSON.stringify(messageReceivedQueryResponse)}`,
+    });
+
     // RESPONSE CHOICE
 
     let responseChoiceQuery = {
       role: "user",
-      content: `${self.name} can choose to respond to or ignore this message. Based on their personality, current emotional state, and sentiment, what choice will they make? Provide either "respond" or "ignore", and the reason for the choice, in a JSON object with the properties response_choice and reason.`,
+      content: `${self.name} can choose to respond to or ignore this message. Based on their personality, current emotional state, and thoughts on ${user.name}, what choice will they make? Provide either "respond" or "ignore", and the reason for the choice, in a JSON object with the properties response_choice and reason.`,
     };
 
-    innerDialogue.push(responseChoiceQuery);
+    messageQueries.push(responseChoiceQuery);
 
     console.log("RESPONSE CHOICE");
     const responseChoiceQueryResponse =
-      await getStructuredInnerDialogueResponse(
-        innerDialogue,
+      await GetStructuredInnerDialogueResponse(
+        messageQueries,
         getResponseChoiceSchema()
       );
 
-    innerDialogue.push({
+    messageQueries.push({
       role: "assistant",
       content: `${JSON.stringify(responseChoiceQueryResponse)}`,
     });
@@ -152,21 +168,23 @@ module.exports = async (client, msg) => {
 
       let messageResponseQuery = {
         role: "user",
-        content: `The way ${self.name} speaks, types, and uses punctuation reflects their identity: ${self.identity}, personality traits: ${self.personality_matrix}, and current emotional status: ${self.emotional_status}. Given this information and their sentiment toward ${user.name}, how would ${self.name} respond back, and with what intended purpose and intended tone? Provide the response, intended purpose, and intended tone in a JSON object with the properties of message, purpose, and tone.`,
+        content: `The way ${self.name} communicates reflects their personality traits: ${alteredPersonality}, and current emotional status: ${self.emotional_status}. How would ${self.name} respond back, and with what intended purpose and intended tone? Provide the response, intended purpose, and intended tone in a JSON object with the properties of message, purpose, and tone.`,
       };
 
-      innerDialogue.push(messageResponseQuery);
+      messageQueries.push(messageResponseQuery);
 
       console.log("MESSAGE RESPONSE");
-      messageResponseQueryResponse = await getStructuredInnerDialogueResponse(
-        innerDialogue,
+      messageResponseQueryResponse = await GetStructuredInnerDialogueResponse(
+        messageQueries,
         getMessageSchema()
       );
 
+      /*
       innerDialogue.push({
         role: "assistant",
         content: `${JSON.stringify(messageResponseQueryResponse)}`,
       });
+      */
 
       if (!messageResponseQueryResponse) {
         msg.reply("Error generating response");
@@ -175,14 +193,14 @@ module.exports = async (client, msg) => {
       // REFLECTION
       let finalEmotionQuery = {
         role: "user",
-        content: `What is ${self.name}'s emotional state after sending their response? Provide the new object (only the emotions whose value properties have changed, whether increased or decreased), and the reason behind the current emotional state. Scale: ${MIN_SENTIMENT_VALUE} (lowest intensity) to ${MAX_SENTIMENT_VALUE} (highest intensity).`,
+        content: `${self.name} responded with this message: ${messageResponseQueryResponse}. What is ${self.name}'s emotional state after sending their response? Provide the new object (only the emotions whose value properties have changed, whether increased or decreased), and the reason behind the current emotional state. Scale: ${MIN_SENTIMENT_VALUE} (lowest intensity) to ${MAX_SENTIMENT_VALUE} (highest intensity).`,
       };
 
       innerDialogue.push(finalEmotionQuery);
 
       console.log("FINAL EMOTIONAL RESPONSE");
       const finalEmotionQueryResponse =
-        await getStructuredInnerDialogueResponse(
+        await GetStructuredInnerDialogueResponse(
           innerDialogue,
           getEmotionStatusSchema()
         );
@@ -197,7 +215,7 @@ module.exports = async (client, msg) => {
       }
 
       self.emotional_status = new EmotionStatus(
-        deepMerge(self.emotional_status, finalEmotionQueryResponse)
+        DeepMerge(self.emotional_status, finalEmotionQueryResponse)
       );
 
       await msg.channel.sendTyping();
@@ -212,7 +230,7 @@ module.exports = async (client, msg) => {
 
       console.log("FINAL EMOTIONAL RESPONSE");
       const finalEmotionQueryResponse =
-        await getStructuredInnerDialogueResponse(
+        await GetStructuredInnerDialogueResponse(
           innerDialogue,
           getEmotionStatusSchema()
         );
@@ -227,19 +245,19 @@ module.exports = async (client, msg) => {
       }
 
       self.emotional_status = new EmotionStatus(
-        deepMerge(self.emotional_status, finalEmotionQueryResponse)
+        DeepMerge(self.emotional_status, finalEmotionQueryResponse)
       );
     }
 
     let sentimentQuery = {
       role: "user",
-      content: `What are ${self.name}'s sentiment status towards ${user.name} after this message exchange? Provide the new object (only the sentiments whose value properties have changed, whether increased or decreased), and the updated reason behind the current sentiment. For each sentiment property, the description property should be identical to the description property of the original sentiment object. Scale: ${MIN_SENTIMENT_VALUE} (lowest intensity) to ${MAX_SENTIMENT_VALUE} (highest intensity).`,
+      content: `What are ${self.name}'s sentiment status towards ${user.name} after this message exchange? Provide the new object (only the sentiments whose value properties have changed, whether increased or decreased), and the updated reason behind the current sentiment. Scale: ${MIN_SENTIMENT_VALUE} (lowest intensity) to ${MAX_SENTIMENT_VALUE} (highest intensity).`,
     };
 
     innerDialogue.push(sentimentQuery);
 
     console.log("SENTIMENT CHANGES");
-    const sentimentQueryResponse = await getStructuredInnerDialogueResponse(
+    const sentimentQueryResponse = await GetStructuredInnerDialogueResponse(
       innerDialogue,
       getSentimentStatusSchema()
     );
@@ -254,18 +272,18 @@ module.exports = async (client, msg) => {
     }
 
     user.sentiment_status = new SentimentStatus(
-      deepMerge(user.sentiment_status, sentimentQueryResponse)
+      DeepMerge(user.sentiment_status, sentimentQueryResponse)
     );
 
     let summaryQuery = {
       role: "user",
-      content: `Add any new key information ${self.name} has learned about ${user.name} from this message exchange, to the summary of what they know about ${user.name}: ${user.summary}. Provide the updated summary in a JSON object with the property 'summary'.`,
+      content: `Add any new key information ${self.name} has learned about ${user.name} from this message exchange, to the summary of what they know about ${user.name}: ${user.summary}. Then summarize it all. Provide the updated summary in a JSON object with the property 'summary'.`,
     };
 
     innerDialogue.push(summaryQuery);
 
     console.log("SUMMARY CHANGES");
-    const summaryQueryResponse = await getStructuredInnerDialogueResponse(
+    const summaryQueryResponse = await GetStructuredInnerDialogueResponse(
       innerDialogue,
       getSummarySchema()
     );
@@ -283,13 +301,13 @@ module.exports = async (client, msg) => {
 
     let identityQuery = {
       role: "user",
-      content: `Add any new information ${self.name} has learned about themselves from this message exchange, to their current self-identity ${self.identity}. Provide the updated identity in a JSON object with the property 'identity'.`,
+      content: `Add any new information ${self.name} has learned about themselves from this message exchange, to their current self-identity ${self.identity}. Then summarize it all. Provide the updated identity in a JSON object with the property 'identity'.`,
     };
 
     innerDialogue.push(identityQuery);
 
     console.log("IDENTITY CHANGES");
-    const identityQueryResponse = await getStructuredInnerDialogueResponse(
+    const identityQueryResponse = await GetStructuredInnerDialogueResponse(
       innerDialogue,
       getIdentitySchema()
     );
@@ -333,10 +351,39 @@ module.exports = async (client, msg) => {
     await Promise.all([self.save(), user.save(), userConversation.save()]);
   }
 
-  function deepMerge(target, source) {
+  async function AlterPersonality(self, user) {
+    let personality = self.personality_matrix;
+    let sentiment = user.sentiment_status;
+
+    let alterQuery = [
+      {
+        role: "user",
+        content: `These are ${self.name}'s personality traits: ${JSON.stringify(
+          personality
+        )}. These are ${self.name}'s sentiments towards ${
+          user.name
+        }: ${sentiment}. How would these sentiments alter ${
+          self.name
+        }'s personality when interacting with ${
+          user.name
+        }? Provide the new object (only the personality traits whose value properties have changed, whether increased or decreased). Scale: ${MIN_PERSONALITY_VALUE} (lowest intensity) to ${MAX_PERSONALITY_VALUE} (highest intensity)`,
+      },
+    ];
+
+    let alterQueryResponse = await GetStructuredInnerDialogueResponse(
+      alterQuery,
+      getPersonalityStatusSchema()
+    );
+
+    let alteredPersonality = DeepMerge(personality, alterQueryResponse);
+
+    return alteredPersonality;
+  }
+
+  function DeepMerge(target, source) {
     for (const key in source) {
       if (source[key] instanceof Object && key in target) {
-        target[key] = deepMerge(target[key], source[key]);
+        target[key] = DeepMerge(target[key], source[key]);
       } else {
         target[key] = source[key];
       }
@@ -344,7 +391,7 @@ module.exports = async (client, msg) => {
     return target;
   }
 
-  async function getStructuredInnerDialogueResponse(innerDialogue, structure) {
+  async function GetStructuredInnerDialogueResponse(innerDialogue, structure) {
     try {
       const response = await openai.createChatCompletion({
         model: "gpt-4o-mini",
@@ -363,12 +410,12 @@ module.exports = async (client, msg) => {
 
       return parsed;
     } catch (error) {
-      msg.reply(`Error: ${error.message}`);
+      msg.reply(`System Error: ${error.message}`);
       return null;
     }
   }
 
-  async function grabUser(authorId) {
+  async function GrabUser(authorId) {
     let user = await Users.findOne({ discord_id: authorId });
 
     if (!user) {
@@ -383,7 +430,7 @@ module.exports = async (client, msg) => {
     return user;
   }
 
-  async function grabSelf(agentName) {
+  async function GrabSelf(agentName) {
     let self = await Self.findOne({ name: agentName });
 
     if (!self) {
@@ -396,156 +443,6 @@ module.exports = async (client, msg) => {
       self = await Self.findOne({ name: agentName });
     }
     return self;
-  }
-
-  function mergePersonality(self, user) {
-    let min = self.personality_matrix.friendliness.min;
-    let max = self.personality_matrix.friendliness.max;
-    let mergedPersonality = {
-      friendliness: {
-        description: `How warm and welcoming they are in their interactions. Value: ${min} (cold/distant) to ${max} (Extremely friendly)`,
-        value: 0,
-      },
-      trust: {
-        description: `How easily they trust others. Value: ${min} (distrustful) to ${max} (fully trusting)`,
-        value: 0,
-      },
-      curiosity: {
-        description: `How eager they are to learn about the user or situation. Value: ${min} (indifferent) to ${max} (extremely curious)`,
-        value: 0,
-      },
-      empathy: {
-        description: `How much they understand and share the feelings of others. Value: ${min} (lacking empathy) to ${max} (highly empathetic)`,
-        value: 0,
-      },
-      humor: {
-        description: `How likely they are to be playful or joke around. Value: ${min} (serious) to ${max} (highly playful)`,
-        value: 0,
-      },
-      seriousness: {
-        description: `How formal and focused they are when interacting. Value: ${min} (laid-back) to ${max} (highly serious)`,
-        value: 0,
-      },
-      optimism: {
-        description: `How positive they are when interpreting situations. Value: ${min} (pessimistic) to ${max} (very optimistic)`,
-        value: 0,
-      },
-      confidence: {
-        description: `How assertive or self-assured they are in their actions or opinions. Value: ${min} (insecure) to ${max} (highly confident)`,
-        value: 0,
-      },
-      adventurousness: {
-        description: `How willing they are to take risks or embrace new ideas. Value: ${min} (risk-adverse) to ${max} (adventurous)`,
-        value: 0,
-      },
-      patience: {
-        description: `How tolerant they are in challenging situations. Value: ${min} (impatient) to ${max} (very patient)`,
-        value: 0,
-      },
-      independence: {
-        description: `How much they rely on external validation, or prefers to make decisinos on their own. Value: ${min} (dependent on others) to ${max} (highly independent)`,
-        value: 0,
-      },
-      compassion: {
-        description: `Their level of care or concern for others. Value: ${min} (indifferent) to ${max} (deeply compassionate)`,
-        value: 0,
-      },
-      creativity: {
-        description: `How likely they are to approach problems in unique or imaginative ways. Value: ${min} (rigid thinker) to ${max} (highly creative)`,
-        value: 0,
-      },
-      stubbornness: {
-        description: `How resistant they are to changing their mind once they've formed an opinion. Value: ${min} (open-minded) to ${max} (highly stubborn)`,
-        value: 0,
-      },
-      impulsiveness: {
-        description: `How quickly they react without thinking or planning ahead. Value: ${min} (calculated) to ${max} (impulsive)`,
-        value: 0,
-      },
-      discipline: {
-        description: `How much they value structure, rules, and staying organized. Value: ${min} (carefree) to ${max} (highly disciplined)`,
-        value: 0,
-      },
-      assertiveness: {
-        description: `How forcefully they push their opinions or take the lead in conversations. Value: ${min} (passive) to ${max} (assertive)`,
-        value: 0,
-      },
-      skepticism: {
-        description: `How much they question the treuth or intentions of others. Value: ${min} (gullible) to ${max} (highly skeptical)`,
-        value: 0,
-      },
-      affection: {
-        description: `How emotionally expressive or loving they are toward others. Value: ${min} (reserved) to ${max} (very affectionate)`,
-        value: 0,
-      },
-      adaptability: {
-        description: `How easily they adjust to new situations, topics, or personalities. Value: ${min} (rigid) to ${max} (highly adaptable)`,
-        value: 0,
-      },
-      sociability: {
-        description: `How much they enjoy interacting with others or initiating conversation. Value: ${min} (introverted) to ${max} (extroverted)`,
-        value: 0,
-      },
-      diplomacy: {
-        description: `How tactful they are in dealing with conflicts or differing opinions. Value: ${min} (blunt) to ${max} (highly diplomatic)`,
-        value: 0,
-      },
-      humility: {
-        description: `How humble or modest they are, avoiding arrogance. Value: ${min} (arrogant) to ${max} (humble)`,
-        value: 0,
-      },
-      loyalty: {
-        description: `How loyal they are to particular people based on past interactions. Value: ${min} (disloyal) to ${max} (extremely loyal)`,
-        value: 0,
-      },
-      jealousy: {
-        description: `How likely they are to feel envious or threatened by others' relationships or actions. Value: ${min} (not jealous) to ${max} (easily jealous)`,
-        value: 0,
-      },
-      resilience: {
-        description: `How well they handle setbacks or negative emotions. Value: ${min} (easily upset) to ${max} (emotionally resilient)`,
-        value: 0,
-      },
-      mood_stability: {
-        description: `How likely their mood is to shift rapidly. Value: ${min} (volatile) to ${max} (stable)`,
-        value: 0,
-      },
-      forgiveness: {
-        description: `How easily they forgive someone after a negative interaction. Value: ${min} (holds grudges) to ${max} (easily forgiving)`,
-        value: 0,
-      },
-      gratitude: {
-        description: `How thankful they feel when receiving compliments or assistance. Value: ${min} (unappreciative) to ${max} (very grateful)`,
-        value: 0,
-      },
-
-      self_consciousness: {
-        description: `How much they worry about how they are perceived by others. Value: ${min} (carefree) to ${max} (very self-conscious)`,
-        value: 0,
-      },
-      openness: {
-        description: `How willing they are to engage in new experiences. Value: ${min} (avoidant) to ${max} (very willing)`,
-        value: 0,
-      },
-      neuroticism: {
-        description: `How sensitive they are to negative emotions like anxiety and stress. Value: ${min} (relaxed) to ${max} (very anxious)`,
-        value: 0,
-      },
-      excitement: {
-        description: `How easily they get enthusiastic and animated. Value: ${min} (reserved) to ${max} (very energetic)`,
-        value: 0,
-      },
-    };
-
-    Object.keys(mergedPersonality).forEach((trait) => {
-      if (mergedPersonality[trait].value !== undefined) {
-        mergedPersonality[trait].value =
-          self.personality_matrix[trait].value +
-          user.personality_modifier.modifier[trait].value;
-      }
-    });
-
-    return JSON.stringify(mergedPersonality, null, 2);
   }
 
   handleUserMessage();
