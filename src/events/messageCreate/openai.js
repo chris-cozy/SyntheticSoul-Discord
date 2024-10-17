@@ -72,6 +72,20 @@ module.exports = async (client, msg) => {
       self.emotional_status
     )}.`;
 
+    let intrinsicRelationship;
+    let extrinsicRelationship = `${self.name} has an extrinsic relationship with ${user.name} of ${user.extrinsic_relationship}.`;
+    
+    switch (user.intrinsic_relationship){
+      case 'creator and master':
+        intrinsicRelationship = `${user.name} is the one who created ${self.name}, they are their ${user.intrinsic_relationship}`;
+        break;
+      default:
+        intrinsicRelationship = `${self.name} recognizes ${user.name} as their ${user.intrinsic_relationship}.`;
+        break;
+    }
+  
+    console.log(intrinsicRelationship);
+
     // MESSAGE ANALYSIS
     let initialEmotionQuery = {
       role: "user",
@@ -79,7 +93,7 @@ module.exports = async (client, msg) => {
         user.name
       }: ${
         user.summary
-      }. ${ongoingConversationString} It is ${receiveDate.toISOString()}. ${
+      }. ${intrinsicRelationship} ${extrinsicRelationship} ${ongoingConversationString} It is ${receiveDate.toISOString()}. ${
         user.name
       } just sent a message to ${self.name}: ${
         msg.content
@@ -115,7 +129,7 @@ module.exports = async (client, msg) => {
     let messageQueries = [
       {
         role: "user",
-        content: `This is ${self.name}'s personality: ${alteredPersonality}. This is their current emotional state: ${self.emotional_status}. This is what they think about ${user.name}: ${user.summary}. This is the ongoing conversation between them: ${ongoingConversationString}. How would ${self.name} perceive the purpose and tone of ${user.name}'s new message: ${msg.content}. Provide the message "${msg.content}", purpose, and tone in a JSON object with the properties of message, purpose, and tone.`,
+        content: `This is ${self.name}'s personality: ${alteredPersonality}. This is their current emotional state: ${self.emotional_status}. This is what they think about ${user.name}: ${user.summary}. ${intrinsicRelationship} ${extrinsicRelationship} This is the ongoing conversation between them: ${ongoingConversationString}. How would ${self.name} perceive the purpose and tone of ${user.name}'s new message: ${msg.content}. Provide the message "${msg.content}", purpose, and tone in a JSON object with the properties of message, purpose, and tone.`,
       },
     ];
 
@@ -418,10 +432,22 @@ module.exports = async (client, msg) => {
   async function GrabUser(authorId) {
     let user = await Users.findOne({ discord_id: authorId });
 
+    let intrinsicRelationship;
+
+    switch (authorId){
+      case process.env.DEVELOPER_ID:
+        intrinsicRelationship = 'creator and master';
+        break;
+      default:
+        intrinsicRelationship = 'none';
+        break;
+    }
+
     if (!user) {
       user = new Users({
         name: msg.author.username,
         discord_id: msg.author.id,
+        intrinsic_relationship: intrinsicRelationship,
       });
       await user.save();
       user = await Users.findOne({ discord_id: authorId });
