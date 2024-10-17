@@ -83,6 +83,7 @@ const selfSchema = new Schema({
     default: {
       name: "Simply existing.",
       category: "custom",
+      reason: "Liminality."
     },
   },
 });
@@ -106,15 +107,17 @@ const userSchema = new Schema({
     required: false,
     default: "",
   },
-  personality_modifier: {
-    type: PersonalityModifier,
+  intrinsic_relationship: {
+    type: String,
+    enum: ['creator and master', 'brother', 'sister', 'mother', 'father', 'son', 'daughter', 'none'],
     required: false,
-    default: {},
+    default: 'none',
   },
-  emotion_modifier: {
-    type: EmotionModifier,
+  extrinsic_relationship: {
+    type: String,
+    enum: ['stranger','friend', 'acquaintance', 'enemy', 'romantic partner', 'best friend'],
     required: false,
-    default: {},
+    default: 'stranger',
   },
   memory_profile: {
     type: [memorySchema],
