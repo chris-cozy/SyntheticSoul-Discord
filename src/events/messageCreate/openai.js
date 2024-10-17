@@ -21,6 +21,9 @@ const {
   getPersonalityStatusSchema,
   MIN_PERSONALITY_VALUE,
   MAX_PERSONALITY_VALUE,
+  EXTRINSIC_RELATIONSHIPS,
+  getExtrinsicRelationshipSchema,
+  NO_INTRINSIC_RELATIONSHIP,
 } = require("../../constants/constants");
 
 /**
@@ -62,7 +65,27 @@ module.exports = async (client, msg) => {
     console.log("REVIEWED MESSAGE COUNT");
     console.log(userMessages.length);
 
-    let alteredPersonality = await AlterPersonality(self, user);
+    let intrinsicRelationship;
+    let extrinsicRelationship = `${self.name} has an extrinsic relationship with ${user.name} of ${user.extrinsic_relationship}.`;
+    
+    switch (user.intrinsic_relationship){
+      case 'creator and master':
+        intrinsicRelationship = `${user.name} is the one who created ${self.name}, they are their ${user.intrinsic_relationship}`;
+        break;
+      case 'brother':
+        intrinsicRelationship = `${self.name} recognizes ${user.name} as their ${user.intrinsic_relationship}.`;
+        break;
+      case NO_INTRINSIC_RELATIONSHIP:
+        intrinsicRelationship = `There is no intrinsic relationship between ${self.name} and ${user.name}.`
+        break;
+      default:
+        intrinsicRelationship = `There is no intrinsic relationship between ${self.name} and ${user.name}.`
+        break;
+    }
+  
+    console.log(intrinsicRelationship);
+
+    let alteredPersonality = await AlterPersonality(self, user, extrinsicRelationship);
 
     let selfContext = `${self.name}'s current activity is ${JSON.stringify(
       self.activity_status
@@ -72,19 +95,7 @@ module.exports = async (client, msg) => {
       self.emotional_status
     )}.`;
 
-    let intrinsicRelationship;
-    let extrinsicRelationship = `${self.name} has an extrinsic relationship with ${user.name} of ${user.extrinsic_relationship}.`;
     
-    switch (user.intrinsic_relationship){
-      case 'creator and master':
-        intrinsicRelationship = `${user.name} is the one who created ${self.name}, they are their ${user.intrinsic_relationship}`;
-        break;
-      default:
-        intrinsicRelationship = `${self.name} recognizes ${user.name} as their ${user.intrinsic_relationship}.`;
-        break;
-    }
-  
-    console.log(intrinsicRelationship);
 
     // MESSAGE ANALYSIS
     let initialEmotionQuery = {
@@ -313,6 +324,29 @@ module.exports = async (client, msg) => {
 
     user.summary = summaryQueryResponse.summary;
 
+    let extrinsicRelationshipQuery = {
+      role: "user",
+      content: `Has the extrinsic relationship of ${user.name} changed? Whether it has changed or not, provide the extrinsic relationship out of these options ${EXTRINSIC_RELATIONSHIPS} in a JSON object with the property 'extrinsic_relationship'.`,
+    };
+
+    innerDialogue.push(extrinsicRelationshipQuery);
+    console.log("EXTRINSIC CHANGES");
+    const extrinsicRelationshipQueryResponse = await GetStructuredInnerDialogueResponse(
+      innerDialogue,
+      getExtrinsicRelationshipSchema()
+    );
+
+    innerDialogue.push({
+      role: "assistant",
+      content: `${JSON.stringify(extrinsicRelationshipQueryResponse)}`,
+    });
+
+    if (!extrinsicRelationshipQueryResponse) {
+      msg.reply("Error reflecting on extrinsic relationship");
+    }
+
+    user.extrinsic_relationship = extrinsicRelationshipQueryResponse.extrinsic_relationship;
+
     let identityQuery = {
       role: "user",
       content: `Add any new information ${self.name} has learned about themselves from this message exchange, to their current self-identity ${self.identity}. Then summarize it all. Provide the updated identity in a JSON object with the property 'identity'.`,
@@ -332,7 +366,7 @@ module.exports = async (client, msg) => {
     });
 
     if (!identityQueryResponse) {
-      msg.reply("Error reflecting on sentiment");
+      msg.reply("Error reflecting on identity");
     }
 
     self.identity = identityQueryResponse.identity;
@@ -365,7 +399,7 @@ module.exports = async (client, msg) => {
     await Promise.all([self.save(), user.save(), userConversation.save()]);
   }
 
-  async function AlterPersonality(self, user) {
+  async function AlterPersonality(self, user, extrinsicRelationship) {
     let personality = self.personality_matrix;
     let sentiment = user.sentiment_status;
 
@@ -376,7 +410,7 @@ module.exports = async (client, msg) => {
           personality
         )}. These are ${self.name}'s sentiments towards ${
           user.name
-        }: ${sentiment}. How would these sentiments alter ${
+        }: ${sentiment}. ${extrinsicRelationship} How would these sentiments and extrinsic relationship alter ${
           self.name
         }'s personality when interacting with ${
           user.name
@@ -439,7 +473,7 @@ module.exports = async (client, msg) => {
         intrinsicRelationship = 'creator and master';
         break;
       default:
-        intrinsicRelationship = 'none';
+        intrinsicRelationship = NO_INTRINSIC_RELATIONSHIP;
         break;
     }
 
