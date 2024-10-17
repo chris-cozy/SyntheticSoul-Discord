@@ -182,6 +182,7 @@ module.exports = async (client) => {
     // ACTIVITY LOOP //
     const activityLoop = async () => {
       try {
+        self = await grabSelf(process.env.BOT_NAME);
         today = new Date();
         todaysActivities = await getActivitiesForDay(today);
         categoryQuery =
@@ -304,6 +305,7 @@ module.exports = async (client) => {
     const decayRate = 60000; //one minute
     const emotionDecay = async () => {
       try {
+        self = await grabSelf(process.env.BOT_NAME);
         const emotions = self.emotional_status.emotions.toObject();
         Object.entries(emotions).forEach(([emotion, data]) => {
           if (data.value > MIN_EMOTION_VALUE) {
