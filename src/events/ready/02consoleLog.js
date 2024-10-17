@@ -148,7 +148,7 @@ module.exports = async (client) => {
       content: `${JSON.stringify(itemQueryResponse)}`,
     });
 
-    let reasonQuery = `Give a short explanation as to why ${self.name} made these choices. Respond with  a JSON object with the property reason.`;
+    let reasonQuery = `Give a short explanation as to why ${self.name} made these choices. Respond with a JSON object with the property reason.`;
 
     innerDialogue.push({
       role: "user",
