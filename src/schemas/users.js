@@ -2,6 +2,7 @@ const { Schema, model, Types } = require("mongoose");
 const {EmotionModifier, EmotionStatusSchema} = require("./emotionSchemas");
 const {SentimentStatusSchema} = require("./sentimentSchemas");
 const {Personality, PersonalityModifier} = require("./personalitySchema");
+const { EXTRINSIC_RELATIONSHIPS, NO_INTRINSIC_RELATIONSHIP, INTRINSIC_RELATIONSHIPS } = require("../constants/constants");
 
 const activitySchema = new Schema({
   name: {
@@ -60,7 +61,7 @@ const selfSchema = new Schema({
   identity: {
     type: String,
     required: false,
-    default: "I am a prototype program designed as a digital replication of the human mind.",
+    default: "I am a prototype program made by cozycharm, designed as a digital replication of the human mind.",
   },
   personality_matrix: {
     type: Personality,
@@ -83,6 +84,7 @@ const selfSchema = new Schema({
     default: {
       name: "Simply existing.",
       category: "custom",
+      reason: "Liminality."
     },
   },
 });
@@ -106,15 +108,17 @@ const userSchema = new Schema({
     required: false,
     default: "",
   },
-  personality_modifier: {
-    type: PersonalityModifier,
+  intrinsic_relationship: {
+    type: String,
+    enum: INTRINSIC_RELATIONSHIPS,
     required: false,
-    default: {},
+    default: NO_INTRINSIC_RELATIONSHIP,
   },
-  emotion_modifier: {
-    type: EmotionModifier,
+  extrinsic_relationship: {
+    type: String,
+    enum: EXTRINSIC_RELATIONSHIPS,
     required: false,
-    default: {},
+    default: 'stranger',
   },
   memory_profile: {
     type: [memorySchema],
