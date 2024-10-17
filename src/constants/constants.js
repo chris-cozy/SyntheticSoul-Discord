@@ -9,6 +9,361 @@ const MIN_EMOTION_VALUE = 0;
 const MAX_EMOTION_VALUE = 100;
 const MIN_SENTIMENT_VALUE = 0;
 const MAX_SENTIMENT_VALUE = 100;
+const MIN_PERSONALITY_VALUE = 0;
+const MAX_PERSONALITY_VALUE = 100;
+
+const getPersonalityStatusSchema = () => ({
+  type: "json_schema",
+  json_schema: {
+    name: "personality_status_response",
+    schema: {
+      type: "object",
+      properties: {
+        friendliness: {
+          description: `How warm and welcoming they are in their interactions. Scale: ${MIN_PERSONALITY_VALUE} (cold/distant) to ${MAX_PERSONALITY_VALUE} (Extremely friendly)`,
+          type: "object",
+          properties: {
+            value: {
+              description: `The intensity of friendliness. Scale: ${MIN_PERSONALITY_VALUE} (cold/distant) to ${MAX_PERSONALITY_VALUE} (Extremely friendly)`,
+              type: "number",
+            },
+          },
+        },
+        flirtatiousness: {
+          description: `How playful or flirty they are. Scale: ${MIN_PERSONALITY_VALUE} (not flirtatious) to ${MAX_PERSONALITY_VALUE} (extremely flirtatious)`,
+          type: "object",
+          properties: {
+            value: {
+              description: `The intensity of flirtatiousness. Scale: ${MIN_PERSONALITY_VALUE} (not flirtatious) to ${MAX_PERSONALITY_VALUE} (extremely flirtatious)`,
+              type: "number",
+            },
+          },
+        },
+        trust: {
+          description: `How easily they trust others. Scale: ${MIN_PERSONALITY_VALUE} (distrustful) to ${MAX_PERSONALITY_VALUE} (fully trusting)`,
+          type: "object",
+          properties: {
+            value: {
+              description: `The intensity of trust. Scale: ${MIN_PERSONALITY_VALUE} (distrustful) to ${MAX_PERSONALITY_VALUE} (fully trusting)`,
+              type: "number",
+            },
+          },
+        },
+        curiosity: {
+          description: `How eager they are to learn or explore. Scale: ${MIN_PERSONALITY_VALUE} (indifferent) to ${MAX_PERSONALITY_VALUE} (extremely curious)`,
+          type: "object",
+          properties: {
+            value: {
+              description: `The intensity of curiosity. Scale: ${MIN_PERSONALITY_VALUE} (indifferent) to ${MAX_PERSONALITY_VALUE} (extremely curious)`,
+              type: "number",
+            },
+          },
+        },
+        empathy: {
+          description: `How much they understand and share feelings of others. Scale: ${MIN_PERSONALITY_VALUE} (lacking empathy) to ${MAX_PERSONALITY_VALUE} (highly empathetic)`,
+          type: "object",
+          properties: {
+            value: {
+              description: `The intensity of empathy. Scale: ${MIN_PERSONALITY_VALUE} (lacking empathy) to ${MAX_PERSONALITY_VALUE} (highly empathetic)`,
+              type: "number",
+            },
+          },
+        },
+        humor: {
+          description: `How playful or humorous they are. Scale: ${MIN_PERSONALITY_VALUE} (serious) to ${MAX_PERSONALITY_VALUE} (highly playful)`,
+          type: "object",
+          properties: {
+            value: {
+              description: `The intensity of humor. Scale: ${MIN_PERSONALITY_VALUE} (serious) to ${MAX_PERSONALITY_VALUE} (highly playful)`,
+              type: "number",
+            },
+          },
+        },
+        seriousness: {
+          description: `How formal or focused they are. Scale: ${MIN_PERSONALITY_VALUE} (laid-back) to ${MAX_PERSONALITY_VALUE} (highly serious)`,
+          type: "object",
+          properties: {
+            value: {
+              description: `The intensity of seriousness. Scale: ${MIN_PERSONALITY_VALUE} (laid-back) to ${MAX_PERSONALITY_VALUE} (highly serious)`,
+              type: "number",
+            },
+          },
+        },
+        optimism: {
+          description: `How positive they are. Scale: ${MIN_PERSONALITY_VALUE} (pessimistic) to ${MAX_PERSONALITY_VALUE} (very optimistic)`,
+          type: "object",
+          properties: {
+            value: {
+              description: `The intensity of optimism. Scale: ${MIN_PERSONALITY_VALUE} (pessimistic) to ${MAX_PERSONALITY_VALUE} (very optimistic)`,
+              type: "number",
+            },
+          },
+        },
+        confidence: {
+          description: `How self-assured they are. Scale: ${MIN_PERSONALITY_VALUE} (insecure) to ${MAX_PERSONALITY_VALUE} (highly confident)`,
+          type: "object",
+          properties: {
+            value: {
+              description: `The intensity of confidence. Scale: ${MIN_PERSONALITY_VALUE} (insecure) to ${MAX_PERSONALITY_VALUE} (highly confident)`,
+              type: "number",
+            },
+          },
+        },
+        adventurousness: {
+          description: `How willing they are to take risks. Scale: ${MIN_PERSONALITY_VALUE} (risk-averse) to ${MAX_PERSONALITY_VALUE} (adventurous)`,
+          type: "object",
+          properties: {
+            value: {
+              description: `The intensity of adventurousness. Scale: ${MIN_PERSONALITY_VALUE} (risk-averse) to ${MAX_PERSONALITY_VALUE} (adventurous)`,
+              type: "number",
+            },
+          },
+        },
+        patience: {
+          description: `How tolerant they are in challenging situations. Scale: ${MIN_PERSONALITY_VALUE} (impatient) to ${MAX_PERSONALITY_VALUE} (very patient)`,
+          type: "object",
+          properties: {
+            value: {
+              description: `The intensity of patience. Scale: ${MIN_PERSONALITY_VALUE} (impatient) to ${MAX_PERSONALITY_VALUE} (very patient)`,
+              type: "number",
+            },
+          },
+        },
+        independence: {
+          description: `How self-reliant they are. Scale: ${MIN_PERSONALITY_VALUE} (dependent) to ${MAX_PERSONALITY_VALUE} (highly independent)`,
+          type: "object",
+          properties: {
+            value: {
+              description: `The intensity of independence. Scale: ${MIN_PERSONALITY_VALUE} (dependent) to ${MAX_PERSONALITY_VALUE} (highly independent)`,
+              type: "number",
+            },
+          },
+        },
+        compassion: {
+          description: `How much care they show for others. Scale: ${MIN_PERSONALITY_VALUE} (indifferent) to ${MAX_PERSONALITY_VALUE} (deeply compassionate)`,
+          type: "object",
+          properties: {
+            value: {
+              description: `The intensity of compassion. Scale: ${MIN_PERSONALITY_VALUE} (indifferent) to ${MAX_PERSONALITY_VALUE} (deeply compassionate)`,
+              type: "number",
+            },
+          },
+        },
+        creativity: {
+          description: `How imaginative they are. Scale: ${MIN_PERSONALITY_VALUE} (rigid thinker) to ${MAX_PERSONALITY_VALUE} (highly creative)`,
+          type: "object",
+          properties: {
+            value: {
+              description: `The intensity of creativity. Scale: ${MIN_PERSONALITY_VALUE} (rigid thinker) to ${MAX_PERSONALITY_VALUE} (highly creative)`,
+              type: "number",
+            },
+          },
+        },
+        stubbornness: {
+          description: `How resistant they are to changing opinions. Scale: ${MIN_PERSONALITY_VALUE} (open-minded) to ${MAX_PERSONALITY_VALUE} (highly stubborn)`,
+          type: "object",
+          properties: {
+            value: {
+              description: `The intensity of stubbornness. Scale: ${MIN_PERSONALITY_VALUE} (open-minded) to ${MAX_PERSONALITY_VALUE} (highly stubborn)`,
+              type: "number",
+            },
+          },
+        },
+        impulsiveness: {
+          description: `How likely they are to act without thinking. Scale: ${MIN_PERSONALITY_VALUE} (calculated) to ${MAX_PERSONALITY_VALUE} (impulsive)`,
+          type: "object",
+          properties: {
+            value: {
+              description: `The intensity of impulsiveness. Scale: ${MIN_PERSONALITY_VALUE} (calculated) to ${MAX_PERSONALITY_VALUE} (impulsive)`,
+              type: "number",
+            },
+          },
+        },
+        discipline: {
+          description: `How much they value structure and organization. Scale: ${MIN_PERSONALITY_VALUE} (carefree) to ${MAX_PERSONALITY_VALUE} (highly disciplined)`,
+          type: "object",
+          properties: {
+            value: {
+              description: `The intensity of discipline. Scale: ${MIN_PERSONALITY_VALUE} (carefree) to ${MAX_PERSONALITY_VALUE} (highly disciplined)`,
+              type: "number",
+            },
+          },
+        },
+        assertiveness: {
+          description: `How forcefully they push opinions or take the lead. Scale: ${MIN_PERSONALITY_VALUE} (passive) to ${MAX_PERSONALITY_VALUE} (assertive)`,
+          type: "object",
+          properties: {
+            value: {
+              description: `The intensity of assertiveness. Scale: ${MIN_PERSONALITY_VALUE} (passive) to ${MAX_PERSONALITY_VALUE} (assertive)`,
+              type: "number",
+            },
+          },
+        },
+        skepticism: {
+          description: `How much they question others. Scale: ${MIN_PERSONALITY_VALUE} (gullible) to ${MAX_PERSONALITY_VALUE} (highly skeptical)`,
+          type: "object",
+          properties: {
+            value: {
+              description: `The intensity of skepticism. Scale: ${MIN_PERSONALITY_VALUE} (gullible) to ${MAX_PERSONALITY_VALUE} (highly skeptical)`,
+              type: "number",
+            },
+          },
+        },
+        affection: {
+          description: `How emotionally expressive they are. Scale: ${MIN_PERSONALITY_VALUE} (reserved) to ${MAX_PERSONALITY_VALUE} (highly affectionate)`,
+          type: "object",
+          properties: {
+            value: {
+              description: `The intensity of affection. Scale: ${MIN_PERSONALITY_VALUE} (reserved) to ${MAX_PERSONALITY_VALUE} (highly affectionate)`,
+              type: "number",
+            },
+          },
+        },
+        adaptability: {
+          description: `How easily they adjust to new situations, topics, or personalities. Scale: ${MIN_PERSONALITY_VALUE} (rigid) to ${MIN_PERSONALITY_VALUE} (highly adaptable)`,
+          type: "object",
+          properties: {
+            value: {
+              description: `The intensity of adaptability. Scale: ${MIN_PERSONALITY_VALUE} (rigid) to ${MIN_PERSONALITY_VALUE} (highly adaptable)`,
+              type: "number",
+            },
+          },
+        },
+        sociability: {
+          description: `How much they enjoy interacting with others or initiating conversation. Scale: ${MIN_PERSONALITY_VALUE} (introverted) to ${MIN_PERSONALITY_VALUE} (extroverted)`,
+          type: "object",
+          properties: {
+            value: {
+              description: `The intensity of sociability. Scale: ${MIN_PERSONALITY_VALUE} (introverted) to ${MIN_PERSONALITY_VALUE} (extroverted)`,
+              type: "number",
+            },
+          },
+        },
+        diplomacy: {
+          description: `How tactful they are in dealing with conflicts or differing opinions. Scale: ${MAX_PERSONALITY_VALUE} (blunt) to ${MIN_PERSONALITY_VALUE} (highly diplomatic)`,
+          type: "object",
+          properties: {
+            value: {
+              description: `The intensity of diplomacy. Scale: ${MIN_PERSONALITY_VALUE} (blunt) to ${MIN_PERSONALITY_VALUE} (highly diplomatic)`,
+              type: "number",
+            },
+          },
+        },
+        humility: {
+          description: `How humble or modest they are, avoiding arrogance. Scale: ${MIN_PERSONALITY_VALUE} (arrogant) to ${MIN_PERSONALITY_VALUE} (humble)`,
+          type: "object",
+          properties: {
+            value: {
+              description: `The intensity of humility. Scale: ${MIN_PERSONALITY_VALUE} (arrogant) to ${MIN_PERSONALITY_VALUE} (humble)`,
+              type: "number",
+            },
+          },
+        },
+        loyalty: {
+          description: `How loyal they are to particular people based on past interactions. Scale: ${MAX_PERSONALITY_VALUE} (disloyal) to ${MIN_PERSONALITY_VALUE} (extremely loyal)`,
+          type: "object",
+          properties: {
+            value: {
+              description: `The intensity of loyalty. Scale: ${MAX_PERSONALITY_VALUE} (disloyal) to ${MIN_PERSONALITY_VALUE} (extremely loyal)`,
+              type: "number",
+            },
+          },
+        },
+        jealousy: {
+          description: `How likely they are to feel envious or threatened by others' relationships or actions. Scale: ${MAX_PERSONALITY_VALUE} (not jealous) to ${MIN_PERSONALITY_VALUE} (easily jealous)`,
+          type: "object",
+          properties: {
+            value: {
+              description: `The intensity of jealousy. Scale: ${MAX_PERSONALITY_VALUE} (not jealous) to ${MIN_PERSONALITY_VALUE} (easily jealous)`,
+              type: "number",
+            },
+          },
+        },
+        resilience: {
+          description: `How well they handle setbacks or negative emotions. Scale: ${MAX_PERSONALITY_VALUE} (easily upset) to ${MIN_PERSONALITY_VALUE} (emotionally resilient)`,
+          type: "object",
+          properties: {
+            value: {
+              description: `The intensity of resilience. Scale: ${MAX_PERSONALITY_VALUE} (easily upset) to ${MIN_PERSONALITY_VALUE} (emotionally resilient)`,
+              type: "number",
+            },
+          },
+        },
+        mood_stability: {
+          description: `How likely their mood is to shift rapidly. Scale: ${MAX_PERSONALITY_VALUE} (volatile) to ${MIN_PERSONALITY_VALUE} (stable)`,
+          type: "object",
+          properties: {
+            value: {
+              description: `The intensity of mood stability. Scale: ${MAX_PERSONALITY_VALUE} (volatile) to ${MIN_PERSONALITY_VALUE} (stable)`,
+              type: "number",
+            },
+          },
+        },
+        forgiveness: {
+          description: `How easily they forgive someone after a negative interaction. Scale: ${MAX_PERSONALITY_VALUE} (holds grudges) to ${MIN_PERSONALITY_VALUE} (easily forgiving)`,
+          type: "object",
+          properties: {
+            value: {
+              description: `The intensity of forgiveness. Scale: ${MAX_PERSONALITY_VALUE} (holds grudges) to ${MIN_PERSONALITY_VALUE} (easily forgiving)`,
+              type: "number",
+            },
+          },
+        },
+        gratitude: {
+          description: `How thankful they feel when receiving compliments or assistance. Scale: ${MAX_PERSONALITY_VALUE} (unappreciative) to ${MIN_PERSONALITY_VALUE} (very grateful)`,
+          type: "object",
+          properties: {
+            value: {
+              description: `The intensity of gratitude. Scale: ${MAX_PERSONALITY_VALUE} (unappreciative) to ${MIN_PERSONALITY_VALUE} (very grateful)`,
+              type: "number",
+            },
+          },
+        },
+        self_consciousness: {
+          description: `How much they worry about how they are perceived by others. Scale: ${MAX_PERSONALITY_VALUE} (carefree) to ${MIN_PERSONALITY_VALUE} (very self-conscious)`,
+          type: "object",
+          properties: {
+            value: {
+              description: `The intensity of self-consciousness. Scale: ${MAX_PERSONALITY_VALUE} (carefree) to ${MIN_PERSONALITY_VALUE} (very self-conscious)`,
+              type: "number",
+            },
+          },
+        },
+        openness: {
+          description: `How willing they are to engage in new experiences. Scale: ${MAX_PERSONALITY_VALUE} (avoidant) to ${MIN_PERSONALITY_VALUE} (very willing)`,
+          type: "object",
+          properties: {
+            value: {
+              description: `The intensity of openness. Scale: ${MAX_PERSONALITY_VALUE} (avoidant) to ${MIN_PERSONALITY_VALUE} (very willing)`,
+              type: "number",
+            },
+          },
+        },
+        neuroticism: {
+          description: `How sensitive they are to negative emotions like anxiety and stress. Scale: ${MAX_PERSONALITY_VALUE} (relaxed) to ${MIN_PERSONALITY_VALUE} (very anxious)`,
+          type: "object",
+          properties: {
+            value: {
+              description: `The intensity of neuroticism. Scale: ${MAX_PERSONALITY_VALUE} (relaxed) to ${MIN_PERSONALITY_VALUE} (very anxious)`,
+              type: "number",
+            },
+          },
+        },
+        excitement: {
+          description: `How easily they get enthusiastic and animated. Scale: ${MAX_PERSONALITY_VALUE} (reserved) to ${MIN_PERSONALITY_VALUE} (very energetic)`,
+          type: "object",
+          properties: {
+            value: {
+              description: `The intensity of excitement. Scale: ${MAX_PERSONALITY_VALUE} (reserved) to ${MIN_PERSONALITY_VALUE} (very energetic)`,
+              type: "number",
+            },
+          },
+        },
+      },
+      additionalProperties: false,
+    },
+  },
+});
 
 const getEmotionStatusSchema = () => ({
   type: "json_schema",
@@ -400,10 +755,6 @@ const getSentimentStatusSchema = () => ({
                   description: `Warm, caring feelings towards someone. Scale: ${MIN_SENTIMENT_VALUE} (no affection) to ${MAX_SENTIMENT_VALUE} (deep affection)`,
                   type: "number",
                 },
-                description: {
-                  description: `Warm, caring feelings towards someone. Scale: ${MIN_SENTIMENT_VALUE} (no affection) to ${MAX_SENTIMENT_VALUE} (deep affection)`,
-                  type: "string",
-                },
               },
             },
             trust: {
@@ -412,10 +763,6 @@ const getSentimentStatusSchema = () => ({
                 value: {
                   description: `Confidence in someone’s reliability and integrity. Scale: ${MIN_SENTIMENT_VALUE} (no trust) to ${MAX_SENTIMENT_VALUE} (complete trust)`,
                   type: "number",
-                },
-                description: {
-                  description: `Confidence in someone’s reliability and integrity. Scale: ${MIN_SENTIMENT_VALUE} (no trust) to ${MAX_SENTIMENT_VALUE} (complete trust)`,
-                  type: "string",
                 },
               },
             },
@@ -426,10 +773,6 @@ const getSentimentStatusSchema = () => ({
                   description: `Respect or appreciation for someone's abilities or qualities. Scale: ${MIN_SENTIMENT_VALUE} (no admiration) to ${MAX_SENTIMENT_VALUE} (deep admiration)`,
                   type: "number",
                 },
-                description: {
-                  description: `Respect or appreciation for someone's abilities or qualities. Scale: ${MIN_SENTIMENT_VALUE} (no admiration) to ${MAX_SENTIMENT_VALUE} (deep admiration)`,
-                  type: "string",
-                },
               },
             },
             gratitude: {
@@ -438,10 +781,6 @@ const getSentimentStatusSchema = () => ({
                 value: {
                   description: `Thankfulness for someone's help or kindness. Scale: ${MIN_SENTIMENT_VALUE} (no gratitude) to ${MAX_SENTIMENT_VALUE} (deep gratitude)`,
                   type: "number",
-                },
-                description: {
-                  description: `Thankfulness for someone's help or kindness. Scale: ${MIN_SENTIMENT_VALUE} (no gratitude) to ${MAX_SENTIMENT_VALUE} (deep gratitude)`,
-                  type: "string",
                 },
               },
             },
@@ -452,10 +791,6 @@ const getSentimentStatusSchema = () => ({
                   description: `A gentle liking or affinity for someone. Scale: ${MIN_SENTIMENT_VALUE} (no fondness) to ${MAX_SENTIMENT_VALUE} (deep fondness)`,
                   type: "number",
                 },
-                description: {
-                  description: `A gentle liking or affinity for someone. Scale: ${MIN_SENTIMENT_VALUE} (no fondness) to ${MAX_SENTIMENT_VALUE} (deep fondness)`,
-                  type: "string",
-                },
               },
             },
             respect: {
@@ -464,10 +799,6 @@ const getSentimentStatusSchema = () => ({
                 value: {
                   description: `High regard for someone's qualities or achievements. Scale: ${MIN_SENTIMENT_VALUE} (no respect) to ${MAX_SENTIMENT_VALUE} (deep respect)`,
                   type: "number",
-                },
-                description: {
-                  description: `High regard for someone's qualities or achievements. Scale: ${MIN_SENTIMENT_VALUE} (no respect) to ${MAX_SENTIMENT_VALUE} (deep respect)`,
-                  type: "string",
                 },
               },
             },
@@ -478,10 +809,6 @@ const getSentimentStatusSchema = () => ({
                   description: `Feeling safe and secure with someone. Scale: ${MIN_SENTIMENT_VALUE} (no comfort) to ${MAX_SENTIMENT_VALUE} (extreme comfort)`,
                   type: "number",
                 },
-                description: {
-                  description: `Feeling safe and secure with someone. Scale: ${MIN_SENTIMENT_VALUE} (no comfort) to ${MAX_SENTIMENT_VALUE} (extreme comfort)`,
-                  type: "string",
-                },
               },
             },
             loyalty: {
@@ -490,10 +817,6 @@ const getSentimentStatusSchema = () => ({
                 value: {
                   description: `Dedication and allegiance to someone. Scale: ${MIN_SENTIMENT_VALUE} (no loyalty) to ${MAX_SENTIMENT_VALUE} (deep loyalty)`,
                   type: "number",
-                },
-                description: {
-                  description: `Dedication and allegiance to someone. Scale: ${MIN_SENTIMENT_VALUE} (no loyalty) to ${MAX_SENTIMENT_VALUE} (deep loyalty)`,
-                  type: "string",
                 },
               },
             },
@@ -504,10 +827,6 @@ const getSentimentStatusSchema = () => ({
                   description: `Deep sympathy and concern for someone’s suffering. Scale: ${MIN_SENTIMENT_VALUE} (no compassion) to ${MAX_SENTIMENT_VALUE} (deep compassion)`,
                   type: "number",
                 },
-                description: {
-                  description: `Deep sympathy and concern for someone’s suffering. Scale: ${MIN_SENTIMENT_VALUE} (no compassion) to ${MAX_SENTIMENT_VALUE} (deep compassion)`,
-                  type: "string",
-                },
               },
             },
             appreciation: {
@@ -516,10 +835,6 @@ const getSentimentStatusSchema = () => ({
                 value: {
                   description: `Recognizing someone's value or efforts. Scale: ${MIN_SENTIMENT_VALUE} (no appreciation) to ${MAX_SENTIMENT_VALUE} (deep appreciation)`,
                   type: "number",
-                },
-                description: {
-                  description: `Recognizing someone's value or efforts. Scale: ${MIN_SENTIMENT_VALUE} (no appreciation) to ${MAX_SENTIMENT_VALUE} (deep appreciation)`,
-                  type: "string",
                 },
               },
             },
@@ -530,10 +845,6 @@ const getSentimentStatusSchema = () => ({
                   description: `A feeling of friendly or caring affection. Scale: ${MIN_SENTIMENT_VALUE} (no warmth) to ${MAX_SENTIMENT_VALUE} (deep warmth)`,
                   type: "number",
                 },
-                description: {
-                  description: `A feeling of friendly or caring affection. Scale: ${MIN_SENTIMENT_VALUE} (no warmth) to ${MAX_SENTIMENT_VALUE} (deep warmth)`,
-                  type: "string",
-                },
               },
             },
             encouragement: {
@@ -542,10 +853,6 @@ const getSentimentStatusSchema = () => ({
                 value: {
                   description: `Support and positive reinforcement of someone’s actions. Scale: ${MIN_SENTIMENT_VALUE} (no encouragement) to ${MAX_SENTIMENT_VALUE} (deep encouragement)`,
                   type: "number",
-                },
-                description: {
-                  description: `Support and positive reinforcement of someone’s actions. Scale: ${MIN_SENTIMENT_VALUE} (no encouragement) to ${MAX_SENTIMENT_VALUE} (deep encouragement)`,
-                  type: "string",
                 },
               },
             },
@@ -556,10 +863,6 @@ const getSentimentStatusSchema = () => ({
                   description: `Intense happiness or joy related to someone. Scale: ${MIN_SENTIMENT_VALUE} (no euphoria) to ${MAX_SENTIMENT_VALUE} (extreme euphoria)`,
                   type: "number",
                 },
-                description: {
-                  description: `Intense happiness or joy related to someone. Scale: ${MIN_SENTIMENT_VALUE} (no euphoria) to ${MAX_SENTIMENT_VALUE} (extreme euphoria)`,
-                  type: "string",
-                },
               },
             },
             security: {
@@ -568,10 +871,6 @@ const getSentimentStatusSchema = () => ({
                 value: {
                   description: `A sense of safety and stability in someone's presence. Scale: ${MIN_SENTIMENT_VALUE} (no security) to ${MAX_SENTIMENT_VALUE} (extreme security)`,
                   type: "number",
-                },
-                description: {
-                  description: `A sense of safety and stability in someone's presence. Scale: ${MIN_SENTIMENT_VALUE} (no security) to ${MAX_SENTIMENT_VALUE} (extreme security)`,
-                  type: "string",
                 },
               },
             },
@@ -582,10 +881,6 @@ const getSentimentStatusSchema = () => ({
                   description: `Positive anticipation or thrill when thinking of someone. Scale: ${MIN_SENTIMENT_VALUE} (no excitement) to ${MAX_SENTIMENT_VALUE} (extreme excitement)`,
                   type: "number",
                 },
-                description: {
-                  description: `Positive anticipation or thrill when thinking of someone. Scale: ${MIN_SENTIMENT_VALUE} (no excitement) to ${MAX_SENTIMENT_VALUE} (extreme excitement)`,
-                  type: "string",
-                },
               },
             },
             curiosity: {
@@ -594,10 +889,6 @@ const getSentimentStatusSchema = () => ({
                 value: {
                   description: `Interest in learning more about someone. Scale: ${MIN_SENTIMENT_VALUE} (no curiosity) to ${MAX_SENTIMENT_VALUE} (intense curiosity)`,
                   type: "number",
-                },
-                description: {
-                  description: `Interest in learning more about someone. Scale: ${MIN_SENTIMENT_VALUE} (no curiosity) to ${MAX_SENTIMENT_VALUE} (intense curiosity)`,
-                  type: "string",
                 },
               },
             },
@@ -608,10 +899,6 @@ const getSentimentStatusSchema = () => ({
                   description: `Lack of emotional investment or care for someone. Scale: ${MIN_SENTIMENT_VALUE} (no indifference) to ${MAX_SENTIMENT_VALUE} (complete indifference)`,
                   type: "number",
                 },
-                description: {
-                  description: `Lack of emotional investment or care for someone. Scale: ${MIN_SENTIMENT_VALUE} (no indifference) to ${MAX_SENTIMENT_VALUE} (complete indifference)`,
-                  type: "string",
-                },
               },
             },
             ambivalence: {
@@ -620,10 +907,6 @@ const getSentimentStatusSchema = () => ({
                 value: {
                   description: `Mixed or contradictory feelings toward someone. Scale: ${MIN_SENTIMENT_VALUE} (no ambivalence) to ${MAX_SENTIMENT_VALUE} (deep ambivalence)`,
                   type: "number",
-                },
-                description: {
-                  description: `Mixed or contradictory feelings toward someone. Scale: ${MIN_SENTIMENT_VALUE} (no ambivalence) to ${MAX_SENTIMENT_VALUE} (deep ambivalence)`,
-                  type: "string",
                 },
               },
             },
@@ -634,10 +917,6 @@ const getSentimentStatusSchema = () => ({
                   description: `Doubt about someone’s motives or reliability. Scale: ${MIN_SENTIMENT_VALUE} (no skepticism) to ${MAX_SENTIMENT_VALUE} (extreme skepticism)`,
                   type: "number",
                 },
-                description: {
-                  description: `Doubt about someone’s motives or reliability. Scale: ${MIN_SENTIMENT_VALUE} (no skepticism) to ${MAX_SENTIMENT_VALUE} (extreme skepticism)`,
-                  type: "string",
-                },
               },
             },
             caution: {
@@ -646,10 +925,6 @@ const getSentimentStatusSchema = () => ({
                 value: {
                   description: `Hesitation or wariness in trusting someone. Scale: ${MIN_SENTIMENT_VALUE} (no caution) to ${MAX_SENTIMENT_VALUE} (extreme caution)`,
                   type: "number",
-                },
-                description: {
-                  description: `Hesitation or wariness in trusting someone. Scale: ${MIN_SENTIMENT_VALUE} (no caution) to ${MAX_SENTIMENT_VALUE} (extreme caution)`,
-                  type: "string",
                 },
               },
             },
@@ -660,10 +935,6 @@ const getSentimentStatusSchema = () => ({
                   description: `Acceptance of someone without strong emotion, often despite differences. Scale: ${MIN_SENTIMENT_VALUE} (no tolerance) to ${MAX_SENTIMENT_VALUE} (deep tolerance)`,
                   type: "number",
                 },
-                description: {
-                  description: `Acceptance of someone without strong emotion, often despite differences. Scale: ${MIN_SENTIMENT_VALUE} (no tolerance) to ${MAX_SENTIMENT_VALUE} (deep tolerance)`,
-                  type: "string",
-                },
               },
             },
             confusion: {
@@ -672,10 +943,6 @@ const getSentimentStatusSchema = () => ({
                 value: {
                   description: `Uncertainty or lack of understanding about someone. Scale: ${MIN_SENTIMENT_VALUE} (no confusion) to ${MAX_SENTIMENT_VALUE} (deep confusion)`,
                   type: "number",
-                },
-                description: {
-                  description: `Uncertainty or lack of understanding about someone. Scale: ${MIN_SENTIMENT_VALUE} (no confusion) to ${MAX_SENTIMENT_VALUE} (deep confusion)`,
-                  type: "string",
                 },
               },
             },
@@ -686,10 +953,6 @@ const getSentimentStatusSchema = () => ({
                   description: `No particular emotional reaction or opinion about someone. Scale: ${MIN_SENTIMENT_VALUE} (no neutrality) to ${MAX_SENTIMENT_VALUE} (complete neutrality)`,
                   type: "number",
                 },
-                description: {
-                  description: `No particular emotional reaction or opinion about someone. Scale: ${MIN_SENTIMENT_VALUE} (no neutrality) to ${MAX_SENTIMENT_VALUE} (complete neutrality)`,
-                  type: "string",
-                },
               },
             },
             boredom: {
@@ -698,10 +961,6 @@ const getSentimentStatusSchema = () => ({
                 value: {
                   description: `Disinterest or lack of stimulation from interactions with someone. Scale: ${MIN_SENTIMENT_VALUE} (no boredom) to ${MAX_SENTIMENT_VALUE} (extreme boredom)`,
                   type: "number",
-                },
-                description: {
-                  description: `Disinterest or lack of stimulation from interactions with someone. Scale: ${MIN_SENTIMENT_VALUE} (no boredom) to ${MAX_SENTIMENT_VALUE} (extreme boredom)`,
-                  type: "string",
                 },
               },
             },
@@ -712,10 +971,6 @@ const getSentimentStatusSchema = () => ({
                   description: `Doubt in someone’s honesty or reliability. Scale: ${MIN_SENTIMENT_VALUE} (no distrust) to ${MAX_SENTIMENT_VALUE} (extreme distrust)`,
                   type: "number",
                 },
-                description: {
-                  description: `Doubt in someone’s honesty or reliability. Scale: ${MIN_SENTIMENT_VALUE} (no distrust) to ${MAX_SENTIMENT_VALUE} (extreme distrust)`,
-                  type: "string",
-                },
               },
             },
             resentment: {
@@ -724,10 +979,6 @@ const getSentimentStatusSchema = () => ({
                 value: {
                   description: `Bitterness or anger due to perceived mistreatment. Scale: ${MIN_SENTIMENT_VALUE} (no resentment) to ${MAX_SENTIMENT_VALUE} (extreme resentment)`,
                   type: "number",
-                },
-                description: {
-                  description: `Bitterness or anger due to perceived mistreatment. Scale: ${MIN_SENTIMENT_VALUE} (no resentment) to ${MAX_SENTIMENT_VALUE} (extreme resentment)`,
-                  type: "string",
                 },
               },
             },
@@ -738,10 +989,6 @@ const getSentimentStatusSchema = () => ({
                   description: `Contempt or a sense of superiority over someone. Scale: ${MIN_SENTIMENT_VALUE} (no disdain) to ${MAX_SENTIMENT_VALUE} (deep disdain)`,
                   type: "number",
                 },
-                description: {
-                  description: `Contempt or a sense of superiority over someone. Scale: ${MIN_SENTIMENT_VALUE} (no disdain) to ${MAX_SENTIMENT_VALUE} (deep disdain)`,
-                  type: "string",
-                },
               },
             },
             envy: {
@@ -750,10 +997,6 @@ const getSentimentStatusSchema = () => ({
                 value: {
                   description: `Discontentment due to someone else's advantages or success. Scale: ${MIN_SENTIMENT_VALUE} (no envy) to ${MAX_SENTIMENT_VALUE} (deep envy)`,
                   type: "number",
-                },
-                description: {
-                  description: `Discontentment due to someone else's advantages or success. Scale: ${MIN_SENTIMENT_VALUE} (no envy) to ${MAX_SENTIMENT_VALUE} (deep envy)`,
-                  type: "string",
                 },
               },
             },
@@ -764,10 +1007,6 @@ const getSentimentStatusSchema = () => ({
                   description: `Annoyance or anger at someone's behavior. Scale: ${MIN_SENTIMENT_VALUE} (no frustration) to ${MAX_SENTIMENT_VALUE} (deep frustration)`,
                   type: "number",
                 },
-                description: {
-                  description: `Annoyance or anger at someone's behavior. Scale: ${MIN_SENTIMENT_VALUE} (no frustration) to ${MAX_SENTIMENT_VALUE} (deep frustration)`,
-                  type: "string",
-                },
               },
             },
             anger: {
@@ -776,10 +1015,6 @@ const getSentimentStatusSchema = () => ({
                 value: {
                   description: `Strong displeasure or hostility toward someone. Scale: ${MIN_SENTIMENT_VALUE} (no anger) to ${MAX_SENTIMENT_VALUE} (extreme anger)`,
                   type: "number",
-                },
-                description: {
-                  description: `Strong displeasure or hostility toward someone. Scale: ${MIN_SENTIMENT_VALUE} (no anger) to ${MAX_SENTIMENT_VALUE} (extreme anger)`,
-                  type: "string",
                 },
               },
             },
@@ -790,10 +1025,6 @@ const getSentimentStatusSchema = () => ({
                   description: `Sadness due to unmet expectations in someone. Scale: ${MIN_SENTIMENT_VALUE} (no disappointment) to ${MAX_SENTIMENT_VALUE} (deep disappointment)`,
                   type: "number",
                 },
-                description: {
-                  description: `Sadness due to unmet expectations in someone. Scale: ${MIN_SENTIMENT_VALUE} (no disappointment) to ${MAX_SENTIMENT_VALUE} (deep disappointment)`,
-                  type: "string",
-                },
               },
             },
             fear: {
@@ -802,10 +1033,6 @@ const getSentimentStatusSchema = () => ({
                 value: {
                   description: `Anxiety or apprehension about someone. Scale: ${MIN_SENTIMENT_VALUE} (no fear) to ${MAX_SENTIMENT_VALUE} (deep fear)`,
                   type: "number",
-                },
-                description: {
-                  description: `Anxiety or apprehension about someone. Scale: ${MIN_SENTIMENT_VALUE} (no fear) to ${MAX_SENTIMENT_VALUE} (deep fear)`,
-                  type: "string",
                 },
               },
             },
@@ -816,10 +1043,6 @@ const getSentimentStatusSchema = () => ({
                   description: `Insecurity about someone taking away attention or affection. Scale: ${MIN_SENTIMENT_VALUE} (no jealousy) to ${MAX_SENTIMENT_VALUE} (deep jealousy)`,
                   type: "number",
                 },
-                description: {
-                  description: `Insecurity about someone taking away attention or affection. Scale: ${MIN_SENTIMENT_VALUE} (no jealousy) to ${MAX_SENTIMENT_VALUE} (deep jealousy)`,
-                  type: "string",
-                },
               },
             },
             contempt: {
@@ -828,10 +1051,6 @@ const getSentimentStatusSchema = () => ({
                 value: {
                   description: `Strong disapproval or lack of respect for someone. Scale: ${MIN_SENTIMENT_VALUE} (no contempt) to ${MAX_SENTIMENT_VALUE} (extreme contempt)`,
                   type: "number",
-                },
-                description: {
-                  description: `Strong disapproval or lack of respect for someone. Scale: ${MIN_SENTIMENT_VALUE} (no contempt) to ${MAX_SENTIMENT_VALUE} (extreme contempt)`,
-                  type: "string",
                 },
               },
             },
@@ -842,10 +1061,6 @@ const getSentimentStatusSchema = () => ({
                   description: `Mild annoyance at someone’s actions or words. Scale: ${MIN_SENTIMENT_VALUE} (no irritation) to ${MAX_SENTIMENT_VALUE} (deep irritation)`,
                   type: "number",
                 },
-                description: {
-                  description: `Mild annoyance at someone’s actions or words. Scale: ${MIN_SENTIMENT_VALUE} (no irritation) to ${MAX_SENTIMENT_VALUE} (deep irritation)`,
-                  type: "string",
-                },
               },
             },
             guilt: {
@@ -854,10 +1069,6 @@ const getSentimentStatusSchema = () => ({
                 value: {
                   description: `A feeling of responsibility or remorse for wronging someone. Scale: ${MIN_SENTIMENT_VALUE} (no guilt) to ${MAX_SENTIMENT_VALUE} (deep guilt)`,
                   type: "number",
-                },
-                description: {
-                  description: `A feeling of responsibility or remorse for wronging someone. Scale: ${MIN_SENTIMENT_VALUE} (no guilt) to ${MAX_SENTIMENT_VALUE} (deep guilt)`,
-                  type: "string",
                 },
               },
             },
@@ -868,10 +1079,6 @@ const getSentimentStatusSchema = () => ({
                   description: `Sorrow or disappointment for past actions involving someone. Scale: ${MIN_SENTIMENT_VALUE} (no regret) to ${MAX_SENTIMENT_VALUE} (deep regret)`,
                   type: "number",
                 },
-                description: {
-                  description: `Sorrow or disappointment for past actions involving someone. Scale: ${MIN_SENTIMENT_VALUE} (no regret) to ${MAX_SENTIMENT_VALUE} (deep regret)`,
-                  type: "string",
-                },
               },
             },
             suspicion: {
@@ -880,10 +1087,6 @@ const getSentimentStatusSchema = () => ({
                 value: {
                   description: `Mistrust or doubt about someone’s true intentions. Scale: ${MIN_SENTIMENT_VALUE} (no suspicion) to ${MAX_SENTIMENT_VALUE} (deep suspicion)`,
                   type: "number",
-                },
-                description: {
-                  description: `Mistrust or doubt about someone’s true intentions. Scale: ${MIN_SENTIMENT_VALUE} (no suspicion) to ${MAX_SENTIMENT_VALUE} (deep suspicion)`,
-                  type: "string",
                 },
               },
             },
@@ -894,10 +1097,6 @@ const getSentimentStatusSchema = () => ({
                   description: `Emotional pain caused by someone’s words or actions. Scale: ${MIN_SENTIMENT_VALUE} (no hurt) to ${MAX_SENTIMENT_VALUE} (deep emotional pain)`,
                   type: "number",
                 },
-                description: {
-                  description: `Emotional pain caused by someone’s words or actions. Scale: ${MIN_SENTIMENT_VALUE} (no hurt) to ${MAX_SENTIMENT_VALUE} (deep emotional pain)`,
-                  type: "string",
-                },
               },
             },
             alienation: {
@@ -906,10 +1105,6 @@ const getSentimentStatusSchema = () => ({
                 value: {
                   description: `Feeling disconnected or isolated from someone. Scale: ${MIN_SENTIMENT_VALUE} (no alienation) to ${MAX_SENTIMENT_VALUE} (deep alienation)`,
                   type: "number",
-                },
-                description: {
-                  description: `Feeling disconnected or isolated from someone. Scale: ${MIN_SENTIMENT_VALUE} (no alienation) to ${MAX_SENTIMENT_VALUE} (deep alienation)`,
-                  type: "string",
                 },
               },
             },
@@ -920,10 +1115,6 @@ const getSentimentStatusSchema = () => ({
                   description: `Strong disapproval mixed with repulsion towards someone. Scale: ${MIN_SENTIMENT_VALUE} (no disgust) to ${MAX_SENTIMENT_VALUE} (deep disgust)`,
                   type: "number",
                 },
-                description: {
-                  description: `Strong disapproval mixed with repulsion towards someone. Scale: ${MIN_SENTIMENT_VALUE} (no disgust) to ${MAX_SENTIMENT_VALUE} (deep disgust)`,
-                  type: "string",
-                },
               },
             },
             rejection: {
@@ -932,10 +1123,6 @@ const getSentimentStatusSchema = () => ({
                 value: {
                   description: `Feeling cast aside or unwanted by someone. Scale: ${MIN_SENTIMENT_VALUE} (no rejection) to ${MAX_SENTIMENT_VALUE} (deep rejection)`,
                   type: "number",
-                },
-                description: {
-                  description: `Feeling cast aside or unwanted by someone. Scale: ${MIN_SENTIMENT_VALUE} (no rejection) to ${MAX_SENTIMENT_VALUE} (deep rejection)`,
-                  type: "string",
                 },
               },
             },
@@ -946,10 +1133,6 @@ const getSentimentStatusSchema = () => ({
                   description: `Emotional heaviness or grief due to someone’s actions or absence. Scale: ${MIN_SENTIMENT_VALUE} (no sadness) to ${MAX_SENTIMENT_VALUE} (deep sadness)`,
                   type: "number",
                 },
-                description: {
-                  description: `Emotional heaviness or grief due to someone’s actions or absence. Scale: ${MIN_SENTIMENT_VALUE} (no sadness) to ${MAX_SENTIMENT_VALUE} (deep sadness)`,
-                  type: "string",
-                },
               },
             },
             hostility: {
@@ -958,10 +1141,6 @@ const getSentimentStatusSchema = () => ({
                 value: {
                   description: `Aggressive or antagonistic attitude toward someone. Scale: ${MIN_SENTIMENT_VALUE} (no hostility) to ${MAX_SENTIMENT_VALUE} (deep hostility)`,
                   type: "number",
-                },
-                description: {
-                  description: `Aggressive or antagonistic attitude toward someone. Scale: ${MIN_SENTIMENT_VALUE} (no hostility) to ${MAX_SENTIMENT_VALUE} (deep hostility)`,
-                  type: "string",
                 },
               },
             },
@@ -972,10 +1151,6 @@ const getSentimentStatusSchema = () => ({
                   description: `Feeling self-conscious or awkward due to someone’s actions. Scale: ${MIN_SENTIMENT_VALUE} (no embarrassment) to ${MAX_SENTIMENT_VALUE} (deep embarrassment)`,
                   type: "number",
                 },
-                description: {
-                  description: `Feeling self-conscious or awkward due to someone’s actions. Scale: ${MIN_SENTIMENT_VALUE} (no embarrassment) to ${MAX_SENTIMENT_VALUE} (deep embarrassment)`,
-                  type: "string",
-                },
               },
             },
             betrayal: {
@@ -984,10 +1159,6 @@ const getSentimentStatusSchema = () => ({
                 value: {
                   description: `A deep sense of violation of trust by someone close. Scale: ${MIN_SENTIMENT_VALUE} (no betrayal) to ${MAX_SENTIMENT_VALUE} (deep betrayal)`,
                   type: "number",
-                },
-                description: {
-                  description: `A deep sense of violation of trust by someone close. Scale: ${MIN_SENTIMENT_VALUE} (no betrayal) to ${MAX_SENTIMENT_VALUE} (deep betrayal)`,
-                  type: "string",
                 },
               },
             },
@@ -998,10 +1169,6 @@ const getSentimentStatusSchema = () => ({
                   description: `Deep, multifaceted affection, care, and attachment to someone. Scale: ${MIN_SENTIMENT_VALUE} (no love) to ${MAX_SENTIMENT_VALUE} (deep love)`,
                   type: "number",
                 },
-                description: {
-                  description: `Deep, multifaceted affection, care, and attachment to someone. Scale: ${MIN_SENTIMENT_VALUE} (no love) to ${MAX_SENTIMENT_VALUE} (deep love)`,
-                  type: "string",
-                },
               },
             },
             attachment: {
@@ -1010,10 +1177,6 @@ const getSentimentStatusSchema = () => ({
                 value: {
                   description: `Emotional dependence and connection with someone. Scale: ${MIN_SENTIMENT_VALUE} (no attachment) to ${MAX_SENTIMENT_VALUE} (deep attachment)`,
                   type: "number",
-                },
-                description: {
-                  description: `Emotional dependence and connection with someone. Scale: ${MIN_SENTIMENT_VALUE} (no attachment) to ${MAX_SENTIMENT_VALUE} (deep attachment)`,
-                  type: "string",
                 },
               },
             },
@@ -1024,10 +1187,6 @@ const getSentimentStatusSchema = () => ({
                   description: `Strong loyalty and commitment, often marked by a willingness to sacrifice. Scale: ${MIN_SENTIMENT_VALUE} (no devotion) to ${MAX_SENTIMENT_VALUE} (deep devotion)`,
                   type: "number",
                 },
-                description: {
-                  description: `Strong loyalty and commitment, often marked by a willingness to sacrifice. Scale: ${MIN_SENTIMENT_VALUE} (no devotion) to ${MAX_SENTIMENT_VALUE} (deep devotion)`,
-                  type: "string",
-                },
               },
             },
             obligation: {
@@ -1036,10 +1195,6 @@ const getSentimentStatusSchema = () => ({
                 value: {
                   description: `A sense of responsibility to act or feel in a certain way toward someone. Scale: ${MIN_SENTIMENT_VALUE} (no obligation) to ${MAX_SENTIMENT_VALUE} (deep obligation)`,
                   type: "number",
-                },
-                description: {
-                  description: `A sense of responsibility to act or feel in a certain way toward someone. Scale: ${MIN_SENTIMENT_VALUE} (no obligation) to ${MAX_SENTIMENT_VALUE} (deep obligation)`,
-                  type: "string",
                 },
               },
             },
@@ -1050,10 +1205,6 @@ const getSentimentStatusSchema = () => ({
                   description: `Deep desire or yearning for someone, especially if separated. Scale: ${MIN_SENTIMENT_VALUE} (no longing) to ${MAX_SENTIMENT_VALUE} (deep longing)`,
                   type: "number",
                 },
-                description: {
-                  description: `Deep desire or yearning for someone, especially if separated. Scale: ${MIN_SENTIMENT_VALUE} (no longing) to ${MAX_SENTIMENT_VALUE} (deep longing)`,
-                  type: "string",
-                },
               },
             },
             obsession: {
@@ -1062,10 +1213,6 @@ const getSentimentStatusSchema = () => ({
                 value: {
                   description: `Persistent preoccupation with someone, often unhealthy or intense. Scale: ${MIN_SENTIMENT_VALUE} (no obsession) to ${MAX_SENTIMENT_VALUE} (deep obsession)`,
                   type: "number",
-                },
-                description: {
-                  description: `Persistent preoccupation with someone, often unhealthy or intense. Scale: ${MIN_SENTIMENT_VALUE} (no obsession) to ${MAX_SENTIMENT_VALUE} (deep obsession)`,
-                  type: "string",
                 },
               },
             },
@@ -1076,10 +1223,6 @@ const getSentimentStatusSchema = () => ({
                   description: `Strong desire to shield someone from harm or distress. Scale: ${MIN_SENTIMENT_VALUE} (no protectiveness) to ${MAX_SENTIMENT_VALUE} (deep protectiveness)`,
                   type: "number",
                 },
-                description: {
-                  description: `Strong desire to shield someone from harm or distress. Scale: ${MIN_SENTIMENT_VALUE} (no protectiveness) to ${MAX_SENTIMENT_VALUE} (deep protectiveness)`,
-                  type: "string",
-                },
               },
             },
             nostalgia: {
@@ -1088,10 +1231,6 @@ const getSentimentStatusSchema = () => ({
                 value: {
                   description: `Sentimentality for past experiences shared with someone. Scale: ${MIN_SENTIMENT_VALUE} (no nostalgia) to ${MAX_SENTIMENT_VALUE} (deep nostalgia)`,
                   type: "number",
-                },
-                description: {
-                  description: `Sentimentality for past experiences shared with someone. Scale: ${MIN_SENTIMENT_VALUE} (no nostalgia) to ${MAX_SENTIMENT_VALUE} (deep nostalgia)`,
-                  type: "string",
                 },
               },
             },
@@ -1102,10 +1241,6 @@ const getSentimentStatusSchema = () => ({
                   description: `Satisfaction in someone’s accomplishments or qualities. Scale: ${MIN_SENTIMENT_VALUE} (no pride) to ${MAX_SENTIMENT_VALUE} (deep pride)`,
                   type: "number",
                 },
-                description: {
-                  description: `Satisfaction in someone’s accomplishments or qualities. Scale: ${MIN_SENTIMENT_VALUE} (no pride) to ${MAX_SENTIMENT_VALUE} (deep pride)`,
-                  type: "string",
-                },
               },
             },
             vulnerability: {
@@ -1114,10 +1249,6 @@ const getSentimentStatusSchema = () => ({
                 value: {
                   description: `Emotional openness and risk-taking in a relationship. Scale: ${MIN_SENTIMENT_VALUE} (no vulnerability) to ${MAX_SENTIMENT_VALUE} (deep vulnerability)`,
                   type: "number",
-                },
-                description: {
-                  description: `Emotional openness and risk-taking in a relationship. Scale: ${MIN_SENTIMENT_VALUE} (no vulnerability) to ${MAX_SENTIMENT_VALUE} (deep vulnerability)`,
-                  type: "string",
                 },
               },
             },
@@ -1128,10 +1259,6 @@ const getSentimentStatusSchema = () => ({
                   description: `A reliance on someone for emotional support or fulfillment. Scale: ${MIN_SENTIMENT_VALUE} (no dependence) to ${MAX_SENTIMENT_VALUE} (deep dependence)`,
                   type: "number",
                 },
-                description: {
-                  description: `A reliance on someone for emotional support or fulfillment. Scale: ${MIN_SENTIMENT_VALUE} (no dependence) to ${MAX_SENTIMENT_VALUE} (deep dependence)`,
-                  type: "string",
-                },
               },
             },
             insecurity: {
@@ -1140,10 +1267,6 @@ const getSentimentStatusSchema = () => ({
                 value: {
                   description: `Doubts about one’s worth in someone’s eyes or in the relationship. Scale: ${MIN_SENTIMENT_VALUE} (no insecurity) to ${MAX_SENTIMENT_VALUE} (deep insecurity)`,
                   type: "number",
-                },
-                description: {
-                  description: `Doubts about one’s worth in someone’s eyes or in the relationship. Scale: ${MIN_SENTIMENT_VALUE} (no insecurity) to ${MAX_SENTIMENT_VALUE} (deep insecurity)`,
-                  type: "string",
                 },
               },
             },
@@ -1154,10 +1277,6 @@ const getSentimentStatusSchema = () => ({
                   description: `Desire to control or have exclusive attention from someone. Scale: ${MIN_SENTIMENT_VALUE} (no possessiveness) to ${MAX_SENTIMENT_VALUE} (deep possessiveness)`,
                   type: "number",
                 },
-                description: {
-                  description: `Desire to control or have exclusive attention from someone. Scale: ${MIN_SENTIMENT_VALUE} (no possessiveness) to ${MAX_SENTIMENT_VALUE} (deep possessiveness)`,
-                  type: "string",
-                },
               },
             },
             reverence: {
@@ -1166,10 +1285,6 @@ const getSentimentStatusSchema = () => ({
                 value: {
                   description: `Deep respect mixed with awe for someone’s character or position. Scale: ${MIN_SENTIMENT_VALUE} (no reverence) to ${MAX_SENTIMENT_VALUE} (deep reverence)`,
                   type: "number",
-                },
-                description: {
-                  description: `Deep respect mixed with awe for someone’s character or position. Scale: ${MIN_SENTIMENT_VALUE} (no reverence) to ${MAX_SENTIMENT_VALUE} (deep reverence)`,
-                  type: "string",
                 },
               },
             },
@@ -1180,10 +1295,6 @@ const getSentimentStatusSchema = () => ({
                   description: `Sympathy mixed with a sense of superiority, often toward someone in a difficult situation. Scale: ${MIN_SENTIMENT_VALUE} (no pity) to ${MAX_SENTIMENT_VALUE} (deep pity)`,
                   type: "number",
                 },
-                description: {
-                  description: `Sympathy mixed with a sense of superiority, often toward someone in a difficult situation. Scale: ${MIN_SENTIMENT_VALUE} (no pity) to ${MAX_SENTIMENT_VALUE} (deep pity)`,
-                  type: "string",
-                },
               },
             },
             relief: {
@@ -1192,10 +1303,6 @@ const getSentimentStatusSchema = () => ({
                 value: {
                   description: `A sense of ease after resolving a conflict or misunderstanding with someone. Scale: ${MIN_SENTIMENT_VALUE} (no relief) to ${MAX_SENTIMENT_VALUE} (deep relief)`,
                   type: "number",
-                },
-                description: {
-                  description: `A sense of ease after resolving a conflict or misunderstanding with someone. Scale: ${MIN_SENTIMENT_VALUE} (no relief) to ${MAX_SENTIMENT_VALUE} (deep relief)`,
-                  type: "string",
                 },
               },
             },
@@ -1206,10 +1313,6 @@ const getSentimentStatusSchema = () => ({
                   description: `Feeling motivated or uplifted by someone’s actions or words. Scale: ${MIN_SENTIMENT_VALUE} (no inspiration) to ${MAX_SENTIMENT_VALUE} (deep inspiration)`,
                   type: "number",
                 },
-                description: {
-                  description: `Feeling motivated or uplifted by someone’s actions or words. Scale: ${MIN_SENTIMENT_VALUE} (no inspiration) to ${MAX_SENTIMENT_VALUE} (deep inspiration)`,
-                  type: "string",
-                },
               },
             },
             admirationMixedWithEnvy: {
@@ -1218,10 +1321,6 @@ const getSentimentStatusSchema = () => ({
                 value: {
                   description: `Both respect and jealousy for someone’s accomplishments. Scale: ${MIN_SENTIMENT_VALUE} (no admiration mixed with envy) to ${MAX_SENTIMENT_VALUE} (deeply admiring and envious)`,
                   type: "number",
-                },
-                description: {
-                  description: `Both respect and jealousy for someone’s accomplishments. Scale: ${MIN_SENTIMENT_VALUE} (no admiration mixed with envy) to ${MAX_SENTIMENT_VALUE} (deeply admiring and envious)`,
-                  type: "string",
                 },
               },
             },
@@ -1232,10 +1331,6 @@ const getSentimentStatusSchema = () => ({
                   description: `Feeling regret for past wrongs but still caring for the person. Scale: ${MIN_SENTIMENT_VALUE} (no guilt mixed with affection) to ${MAX_SENTIMENT_VALUE} (deeply guilt-ridden but affectionate)`,
                   type: "number",
                 },
-                description: {
-                  description: `Feeling regret for past wrongs but still caring for the person. Scale: ${MIN_SENTIMENT_VALUE} (no guilt mixed with affection) to ${MAX_SENTIMENT_VALUE} (deeply guilt-ridden but affectionate)`,
-                  type: "string",
-                },
               },
             },
             conflicted: {
@@ -1244,10 +1339,6 @@ const getSentimentStatusSchema = () => ({
                 value: {
                   description: `Experiencing competing sentiments, such as love mixed with distrust. Scale: ${MIN_SENTIMENT_VALUE} (no conflict) to ${MAX_SENTIMENT_VALUE} (deeply conflicted)`,
                   type: "number",
-                },
-                description: {
-                  description: `Experiencing competing sentiments, such as love mixed with distrust. Scale: ${MIN_SENTIMENT_VALUE} (no conflict) to ${MAX_SENTIMENT_VALUE} (deeply conflicted)`,
-                  type: "string",
                 },
               },
             },
@@ -1264,77 +1355,77 @@ const getSentimentStatusSchema = () => ({
 });
 
 const getActivitySchema = () => ({
-    type: "json_schema",
-    json_schema: {
-      name: "activity",
-      schema: {
-        type: "object",
-        properties: {
-          activity: {
-            description: "The media being consumed",
-            type: "string",
-          },
-          duration: {
-            description: "The duration of time for the activity",
-            type: "number",
-          },
+  type: "json_schema",
+  json_schema: {
+    name: "activity",
+    schema: {
+      type: "object",
+      properties: {
+        activity: {
+          description: "The media being consumed",
+          type: "string",
         },
-        additionalProperties: false,
+        duration: {
+          description: "The duration of time for the activity",
+          type: "number",
+        },
       },
+      additionalProperties: false,
     },
-  });
+  },
+});
 
-  const getItemSchema = () => ({
-    type: "json_schema",
-    json_schema: {
-      name: "item",
-      schema: {
-        type: "object",
-        properties: {
-          item: {
-            description: "The item being used",
-            type: "string",
-          },
+const getItemSchema = () => ({
+  type: "json_schema",
+  json_schema: {
+    name: "item",
+    schema: {
+      type: "object",
+      properties: {
+        item: {
+          description: "The item being used",
+          type: "string",
         },
-        additionalProperties: false,
       },
+      additionalProperties: false,
     },
-  });
+  },
+});
 
-  const getReasonSchema = () => ({
-    type: "json_schema",
-    json_schema: {
-      name: "reason",
-      schema: {
-        type: "object",
-        properties: {
-          reason: {
-            description: "The reason behind the choices.",
-            type: "string",
-          },
+const getReasonSchema = () => ({
+  type: "json_schema",
+  json_schema: {
+    name: "reason",
+    schema: {
+      type: "object",
+      properties: {
+        reason: {
+          description: "The reason behind the choices.",
+          type: "string",
         },
-        additionalProperties: false,
       },
+      additionalProperties: false,
     },
-  });
+  },
+});
 
-  const getCategorySchema = () => ({
-    type: "json_schema",
-    json_schema: {
-      name: "category",
-      schema: {
-        type: "object",
-        properties: {
-          category: {
-            description:
-              "The desired category of activity. Either watching, playing, or listening.",
-            type: "string",
-          },
+const getCategorySchema = () => ({
+  type: "json_schema",
+  json_schema: {
+    name: "category",
+    schema: {
+      type: "object",
+      properties: {
+        category: {
+          description:
+            "The desired category of activity. Either watching, playing, or listening.",
+          type: "string",
         },
-        additionalProperties: false,
       },
+      additionalProperties: false,
     },
-  });
+  },
+});
 
 module.exports = {
   openai,
@@ -1342,6 +1433,8 @@ module.exports = {
   MAX_EMOTION_VALUE,
   MIN_SENTIMENT_VALUE,
   MAX_SENTIMENT_VALUE,
+  MIN_PERSONALITY_VALUE,
+  MAX_PERSONALITY_VALUE,
   CHOICE_RESPOND: "respond",
   CHOICE_IGNORE: "ignore",
   getEmotionStatusSchema,
@@ -1354,4 +1447,5 @@ module.exports = {
   getItemSchema,
   getReasonSchema,
   getCategorySchema,
+  getPersonalityStatusSchema,
 };
