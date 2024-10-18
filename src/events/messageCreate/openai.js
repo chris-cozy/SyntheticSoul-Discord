@@ -302,7 +302,7 @@ module.exports = async (client, msg) => {
 
     let summaryQuery = {
       role: "user",
-      content: `Add any new key information ${self.name} has learned about ${user.name} from this message exchange, to the summary of what they know about ${user.name}: ${user.summary}. Then summarize it all. Provide the updated summary in a JSON object with the property 'summary'.`,
+      content: `Add any new key information ${self.name} has learned about ${user.name} from this message exchange, to the summary of what they know about ${user.name}: ${user.summary}. Then re-summarize everything for brevity. Provide the updated summary in a JSON object with the property 'summary'.`,
     };
 
     innerDialogue.push(summaryQuery);
