@@ -1448,6 +1448,42 @@ const getCategorySchema = () => ({
   },
 });
 
+const getIsThinkingSchema = () => ({
+  type: "json_schema",
+  json_schema: {
+    name: "thinking",
+    schema: {
+      type: "object",
+      properties: {
+        is_thinking: {
+          description:
+            "Whether or not they are thinking.",
+          type: "string",
+        },
+      },
+      additionalProperties: false,
+    },
+  },
+});
+
+const getThoughtSchema = () => ({
+  type: "json_schema",
+  json_schema: {
+    name: "thought",
+    schema: {
+      type: "object",
+      properties: {
+        thought: {
+          description:
+            "The thought being had",
+          type: "string",
+        },
+      },
+      additionalProperties: false,
+    },
+  },
+});
+
 module.exports = {
   openai,
   MIN_EMOTION_VALUE,
@@ -1473,4 +1509,6 @@ module.exports = {
   getCategorySchema,
   getPersonalityStatusSchema,
   getExtrinsicRelationshipSchema,
+  getIsThinkingSchema,
+  getThoughtSchema,
 };
