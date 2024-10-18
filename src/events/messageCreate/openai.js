@@ -396,6 +396,8 @@ module.exports = async (client, msg) => {
       msg.reply(`System: ${self.name} has chosen to ignore your message.`);
     }
 
+    user.last_interaction = receiveDate;
+
     await Promise.all([self.save(), user.save(), userConversation.save()]);
   }
 
