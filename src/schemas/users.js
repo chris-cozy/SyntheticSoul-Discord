@@ -1,6 +1,7 @@
 const { Schema, model, Types } = require("mongoose");
 const {EmotionModifier, EmotionStatusSchema} = require("./emotionSchemas");
 const {SentimentStatusSchema} = require("./sentimentSchemas");
+const {ThoughtSchema} = require("./thoughtSchema");
 const {Personality, PersonalityModifier} = require("./personalitySchema");
 const { EXTRINSIC_RELATIONSHIPS, NO_INTRINSIC_RELATIONSHIP, INTRINSIC_RELATIONSHIPS } = require("../constants/constants");
 
@@ -78,6 +79,11 @@ const selfSchema = new Schema({
     required: false,
     default: {},
   },
+  latest_thought: {
+    type: ThoughtSchema,
+    required: false,
+    default : {}
+  },
   activity_status: {
     type: activitySchema,
     required: false,
@@ -130,6 +136,11 @@ const userSchema = new Schema({
     required: false,
     default: {},
   },
+  last_interaction: {
+    type: Date,
+    required: false,
+    default: new Date(),
+  }
 });
 
 module.exports = {
