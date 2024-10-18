@@ -234,7 +234,7 @@ module.exports = async (client) => {
     };
 
     // THOUGHT LOOP //
-    const thoughtRate = 1200000; //20 minute
+    const thoughtRate = 3600000; //60 minute
     const thinkingLoop = async () => {
       let self = await grabSelf(process.env.BOT_NAME);
       let recentThoughts = await Thought.find()
@@ -265,6 +265,11 @@ module.exports = async (client) => {
       let queries = [isThinkingQuery];
 
       let isThinkingQueryResponse = await getStructuredQueryResponse(queries, getIsThinkingSchema());
+
+      if (!isThinkingQueryResponse) {
+        console.log("Error thinking");
+        return;
+      }
 
       queries.push({
         role: "assistant",
