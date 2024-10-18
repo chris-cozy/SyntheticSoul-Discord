@@ -349,7 +349,7 @@ module.exports = async (client, msg) => {
 
     let identityQuery = {
       role: "user",
-      content: `Add any new information ${self.name} has learned about themselves from this message exchange, to their current self-identity ${self.identity}. Then summarize it all. Provide the updated identity in a JSON object with the property 'identity'.`,
+      content: `Add any new information ${self.name} has learned about themselves from this message exchange, to their current self-identity ${self.identity}. Then re-summarize everything for brevity. Provide the updated identity in a JSON object with the property 'identity'.`,
     };
 
     innerDialogue.push(identityQuery);
