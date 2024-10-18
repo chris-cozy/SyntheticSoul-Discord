@@ -44,7 +44,7 @@ module.exports = {
       const embed = new EmbedBuilder()
         .setTitle(client.user.username)
         .setColor("Random")
-        .setDescription(self.identity)
+        .setDescription( "˚｡⋆୨୧˚  i'm just a girl  ˚୨୧⋆ ｡˚")
         .setURL("https://github.com/chris-cozy/SyntheticSoul-Discord")
         .setThumbnail(client.user.displayAvatarURL())
         .setTimestamp()
@@ -52,6 +52,9 @@ module.exports = {
           text: `requested by ${interaction.user.username} `,
           iconURL: `${interaction.user.displayAvatarURL()}`,
         });
+
+        embed.addFields({name: 'Self Identity', value: `${self.identity}`, inline: false});
+      embed.addFields({name: 'Latest Thought', value: `${self.latest_thought.thought}`, inline: false});
 
       interaction.reply({ embeds: [embed] });
     } catch (error) {
