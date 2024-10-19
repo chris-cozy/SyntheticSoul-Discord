@@ -8,7 +8,7 @@ const { Client } = require('discord.js');
  * @param {Boolean} foldersOnly - Determine if only return subdirs
  * @returns Array of file paths or subdir paths (Array)
  */
-export const GetAllFiles = (directory, foldersOnly = false) => {
+function GetAllFiles(directory, foldersOnly = false){
     let fileNames = [];
 
     // Create array all files in directory, with filetype included
@@ -39,7 +39,7 @@ export const GetAllFiles = (directory, foldersOnly = false) => {
 * @param {int} guildId 
 * @returns List of commands (Array)
 */
-export const GetApplicationCommands = async (client, guildId) => {
+async function GetApplicationCommands(client, guildId){
    let applicationCommands;
 
    // If application in a discord server, grab those commands.
@@ -63,9 +63,9 @@ export const GetApplicationCommands = async (client, guildId) => {
  * @param {object} localCommand - Command object
  * @returns whether the commands are different (boolean)
  */
-export const AreCommandsDifferent = (existingCommand, localCommand) => {
+function AreCommandsDifferent(existingCommand, localCommand){
     // Check if the choices are different
-    const areChoicesDifferent = (existingChoices, localChoices) => {
+    function areChoicesDifferent(existingChoices, localChoices) {
         for (const localChoice of localChoices) {
             const existingChoice = existingChoices?.find(
                 (choice) => choice.name === localChoice.name
@@ -85,7 +85,7 @@ export const AreCommandsDifferent = (existingCommand, localCommand) => {
     };
 
     // Check if the choices are different
-    const areOptionsDifferent = (existingOptions, localOptions) => {
+    function areOptionsDifferent (existingOptions, localOptions) {
         for (const localOption of localOptions) {
             const existingOption = existingOptions?.find(
                 (option) => option.name === localOption.name
@@ -130,7 +130,7 @@ export const AreCommandsDifferent = (existingCommand, localCommand) => {
  * @param {List} exceptions - List of command names to skip over
  * @returns List of local commmand objects
  */
-export const GetLocalCommands = (exceptions = []) => {
+function GetLocalCommands(exceptions = []){
     let localCommands = [];
 
     // Grab all subdirs of command directory
@@ -155,3 +155,10 @@ export const GetLocalCommands = (exceptions = []) => {
     }
     return localCommands;
 };
+
+module.exports = {
+    GetLocalCommands,
+    AreCommandsDifferent,
+    GetApplicationCommands,
+    GetAllFiles,
+}

@@ -1,4 +1,4 @@
-const GetAllFiles = require("../utils/fileHelpers");
+const {GetAllFiles} = require("../utils/fileHelpers");
 const path = require('path');
 const { Client } = require('discord.js');
 

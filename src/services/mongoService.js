@@ -1,5 +1,5 @@
-const { Users, Self } = require("../schemas/users");
-const { Conversations } = require("../schemas/conversationSchema");
+const { Users, Self } = require("../mongoSchemas/users");
+const { Conversations } = require("../mongoSchemas/conversationSchema");
 
 
 /**
@@ -7,7 +7,7 @@ const { Conversations } = require("../schemas/conversationSchema");
 * @param {String} authorId 
 * @returns User object for user
 */
-export const GrabUser = async (authorId) => {
+async function GrabUser(authorId){
   let user = await Users.findOne({ discord_id: authorId });
 
   let intrinsicRelationship;
@@ -39,7 +39,7 @@ export const GrabUser = async (authorId) => {
 * @param {String} agentName 
 * @returns Self object for agent
 */
-export const GrabSelf = async (agentName) => {
+async function GrabSelf(agentName){
   let self = await Self.findOne({ name: agentName });
 
   if (!self) {
@@ -61,11 +61,17 @@ export const GrabSelf = async (agentName) => {
 * @param {int} messageCount - Number of messages to return
 * @returns Array of message objects
 */
-export const GetConversationSnippet = async (userId, messageCount) => {
+async function GetConversation(userId){
     let userConversation =
       (await Conversations.findOne({
         user_id: userId,
       })) || new Conversations({ user_id: userId });
-    let userMessages = userConversation.messages.slice(-messageCount);
-    return userMessages;
+
+    return userConversation;
+}
+
+module.exports = {
+  GetConversation,
+  GrabSelf,
+  GrabUser,
 }

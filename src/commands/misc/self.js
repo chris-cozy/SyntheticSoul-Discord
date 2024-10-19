@@ -1,7 +1,6 @@
 const { EmbedBuilder } = require("discord.js");
 const { Client, Interaction } = require("discord.js");
-const { Users, Self } = require("../../schemas/users");
-const {GrabSelf, GrabUser, GetConversationSnippet} = require("../../services/mongoService");
+const {GrabUser} = require("../../services/mongoService");
 
 module.exports = {
   name: "self",

@@ -1,23 +1,5 @@
 const {
     openai,
-    MIN_EMOTION_VALUE,
-    MAX_EMOTION_VALUE,
-    MIN_SENTIMENT_VALUE,
-    MAX_SENTIMENT_VALUE,
-    CHOICE_RESPOND,
-    CHOICE_IGNORE,
-    getEmotionStatusSchema,
-    getMessageSchema,
-    getSummarySchema,
-    getResponseChoiceSchema,
-    getIdentitySchema,
-    getSentimentStatusSchema,
-    getPersonalityStatusSchema,
-    MIN_PERSONALITY_VALUE,
-    MAX_PERSONALITY_VALUE,
-    EXTRINSIC_RELATIONSHIPS,
-    getExtrinsicRelationshipSchema,
-    NO_INTRINSIC_RELATIONSHIP,
   } = require("../constants/constants");
 
 
@@ -27,7 +9,7 @@ const {
  * @param {Object} schema - The schema object for structuring the result
  * @returns The message as a parsed JSON object
  */
-export const GetStructuredInnerDialogueResponse = async (messages, schema) => {
+async function GetStructuredQueryResponse(messages, schema){
     try {
       const response = await openai.createChatCompletion({
         model: "gpt-4o-mini",
@@ -51,3 +33,7 @@ export const GetStructuredInnerDialogueResponse = async (messages, schema) => {
       return null;
     }
   }
+
+module.exports = {
+  GetStructuredQueryResponse,
+}

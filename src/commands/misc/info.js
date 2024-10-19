@@ -1,9 +1,7 @@
 const { EmbedBuilder } = require("discord.js");
 const { Client, Interaction } = require("discord.js");
-const { Configuration, OpenAIApi } = require("openai");
-const { Users, Self } = require("../../schemas/users");
 const { FormatDate } = require("../../utils/logicHelpers");
-const {GrabSelf, GrabUser, GetConversationSnippet} = require("../../services/mongoService");
+const {GrabSelf} = require("../../services/mongoService");
 
 module.exports = {
   name: "info",

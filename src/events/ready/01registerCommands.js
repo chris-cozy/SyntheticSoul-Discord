@@ -1,7 +1,6 @@
-const { testServer } = require('../../../config.json');
-const GetLocalCommands = require("../utils/fileHelpers");
-const GetApplicationCommands = require("../utils/fileHelpers");
-const AreCommandsDifferent = require("../utils/fileHelpers");
+const {GetLocalCommands,
+    AreCommandsDifferent,
+    GetApplicationCommands} = require("../../utils/fileHelpers");
 const { Client } = require('discord.js');
 
 /**
@@ -11,7 +10,7 @@ const { Client } = require('discord.js');
 module.exports = async (client) => {
     try {
         const localCommands = GetLocalCommands();
-        const applicationCommands = await GetApplicationCommands(client, testServer);
+        const applicationCommands = await GetApplicationCommands(client, process.env.TEST_SERVER);
 
         // Delete a command by id
         // applicationCommands.delete('1094985345889738852');

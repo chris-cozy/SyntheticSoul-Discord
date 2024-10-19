@@ -1,5 +1,4 @@
-const { devs, testServer } = require('../../../config.json');
-const GetLocalCommands = require("../utils/fileHelpers");
+const {GetLocalCommands} = require("../../utils/fileHelpers");
 const { Client, Interaction } = require('discord.js');
 
 /**
@@ -22,7 +21,7 @@ module.exports = async (client, interaction) => {
         // If command has developer only perms, check if user is a developer
         if (commandObject.devOnly) {
             // Ephemeral - only person running the command can see the msg
-            if (!devs.includes(interaction.member.id)) {
+            if (interaction.member.id !== process.env.DEVELOPER_ID) {
                 interaction.reply({
                     content: 'Only developers are allowed to run this command',
                     ephemeral: true,
@@ -34,7 +33,7 @@ module.exports = async (client, interaction) => {
         // If command has test-only perms, check if server is the testing server
         if (commandObject.testOnly) {
             // Ephemeral - only person running the command can see the msg
-            if (!(interaction.guild.id === testServer)) {
+            if (!(interaction.guild.id === process.env.TEST_SERVER)) {
                 interaction.reply({
                     content: 'This command cannot be run here.',
                     ephemeral: true,
