@@ -28,6 +28,7 @@ const {
 
 const {GrabSelf, GrabUser} = require("../../services/mongoService");
 const {DeepMerge} = require("../../utils/logicHelpers");
+const {GetStructuredInnerDialogueResponse} = require("../../services/aiService");
 
 /**
  * @brief Handle a message sent in the server.
@@ -432,30 +433,6 @@ module.exports = async (client, msg) => {
 
     return alteredPersonality;
   }
-
-  async function GetStructuredInnerDialogueResponse(innerDialogue, structure) {
-    try {
-      const response = await openai.createChatCompletion({
-        model: "gpt-4o-mini",
-        messages: innerDialogue,
-        response_format: structure,
-      });
-      console.log("---");
-      console.log(
-        JSON.stringify(JSON.parse(response.data.choices[0].message.content))
-      );
-      console.log("---");
-
-      const parsed = JSON.parse(
-        response.data.choices[0].message.content.trim()
-      );
-
-      return parsed;
-    } catch (error) {
-      msg.reply(`System Error: ${error.message}`);
-      return null;
-    }
-  }
-
+  
   handleUserMessage();
 };

@@ -21,6 +21,7 @@ const {
 
 const {GrabSelf, GrabUser} = require("../../services/mongoService");
 const {DeepMerge, GetType} = require("../../utils/logicHelpers");
+const {GetStructuredInnerDialogueResponse} = require("../../services/aiService");
 
 /**
  * @brief
@@ -109,9 +110,8 @@ module.exports = async (client) => {
       }
     };
 
-    let activityQueryResponse = { duration: 1800000 }; // 30 minutes
     // ACTIVITY LOOP //
-    const activityLoop = async () => {
+    const activityLoop = async (activityRate) => {
       try {
         let self = await GrabSelf(process.env.BOT_NAME);
         let today = new Date();
@@ -271,6 +271,8 @@ module.exports = async (client) => {
             start_time: now,
           });
 
+          activityRate = activityQueryResponse.duration;
+
           await self.save();
           await activityRecord.save();
         } else {
@@ -291,19 +293,18 @@ module.exports = async (client) => {
             start_time: now
           });
 
-          activityQueryResponse = { duration: 1800000 }; // 30 minutes
+          activityRate =  1800000; // 30 minutes
           await self.save();
           await activityRecord.save();
         }
       } catch (error) {
-        console.log(`Error during activity update: ${error}`);
+        console.log(`System Error: ${error.message}`);
       }
-      setTimeout(activityLoop, activityQueryResponse.duration);
+      setTimeout(activityLoop, activityRate);
     };
 
     // EMOTIONAL DECAY //
-    const decayRate = 120000; //2 minutes
-    const emotionDecay = async () => {
+    const emotionDecayLoop = async (decayRate) => {
       try {
         self = await GrabSelf(process.env.BOT_NAME);
         const emotions = self.emotional_status.emotions.toObject();
@@ -319,12 +320,11 @@ module.exports = async (client) => {
       } catch (error) {
         console.log(`Error during emotional decay: ${error}`);
       }
-      setTimeout(emotionDecay, decayRate);
+      setTimeout(emotionDecayLoop, decayRate);
     };
 
     // THOUGHT LOOP //
-    const thoughtRate = 3600000; //60 minute
-    const thinkingLoop = async () => {
+    const thinkingLoop = async (thoughtRate) => {
       let self = await GrabSelf(process.env.BOT_NAME);
       let recentThoughts = await Thought.find()
         .sort({ _id: -1 }) // Sort in descending order by _id (newest first)
@@ -387,19 +387,10 @@ module.exports = async (client) => {
           },
         ];
 
-        //queries.push(thoughtQuery);
-
         let thoughtQueryResponse = await getStructuredQueryResponse(
           thoughtQuery,
           getThoughtSchema()
         );
-
-        /*
-        queries.push({
-          role: "assistant",
-          content: `${JSON.stringify(thoughtQueryResponse)}`,
-        });
-        */
 
         let emotionalReaction = {
           role: "user",
@@ -447,33 +438,10 @@ module.exports = async (client) => {
       setTimeout(thinkingLoop, thoughtRate);
     };
 
-    thinkingLoop();
-    emotionDecay();
-    activityLoop();
+    thinkingLoop(3600000); // 60 mins
+    emotionDecayLoop(120000); // 2 mins
+    activityLoop(1800000); // 30 mins
   } catch (error) {
-    console.log(`There was an error: ${error}`);
-  }
-
-  async function getStructuredQueryResponse(query, schema) {
-    try {
-      const response = await openai.createChatCompletion({
-        model: "gpt-4o-mini",
-        messages: query,
-        response_format: schema,
-      });
-      console.log("---");
-      console.log(
-        JSON.stringify(JSON.parse(response.data.choices[0].message.content))
-      );
-      console.log("---");
-
-      const parsed = JSON.parse(
-        response.data.choices[0].message.content.trim()
-      );
-
-      return parsed;
-    } catch (error) {
-      return null;
-    }
+    console.log(`System Error: ${error.message}`);
   }
 };
