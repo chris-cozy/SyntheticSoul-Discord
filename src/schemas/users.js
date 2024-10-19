@@ -19,6 +19,7 @@ const activitySchema = new Schema({
   item: {
     type: String,
     required: false,
+    default: 'None'
   },
   reason: {
     type: String,
