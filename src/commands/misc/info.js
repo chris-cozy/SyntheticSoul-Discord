@@ -2,6 +2,7 @@ const { EmbedBuilder } = require("discord.js");
 const { Client, Interaction } = require("discord.js");
 const { Configuration, OpenAIApi } = require("openai");
 const { Users, Self } = require("../../schemas/users");
+const { FormatDate } = require("../../utils/logicHelpers");
 
 module.exports = {
   name: "info",
@@ -54,7 +55,7 @@ module.exports = {
         });
 
         embed.addFields({name: 'Self Identity', value: `${self.identity}`, inline: false});
-      embed.addFields({name: 'Latest Thought', value: `${self.latest_thought.thought}`, inline: false});
+      embed.addFields({name: `Latest Thought: ${FormatDate(self.latest_thought.timestamp)}`, value: `${self.latest_thought.thought}`, inline: false});
 
       interaction.reply({ embeds: [embed] });
     } catch (error) {

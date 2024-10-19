@@ -46,3 +46,21 @@ export const DeepMerge = (target, source, average = false) => {
         return ActivityType.Custom;
     }
   }
+
+
+  /**
+* @brief Formats the date for better readability
+* @param {Date} date - Desired date
+* @returns Formatted string
+*/
+  export const FormatDate = (date) => {
+    const options = { month: '2-digit', day: '2-digit', year: 'numeric' };
+    const formattedDate = date.toLocaleDateString('en-US', options);
+    
+    let hours = date.getHours();
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12; // Convert to 12-hour format
+  
+    return `${formattedDate} ${hours}:${minutes}${ampm}`;
+  }
