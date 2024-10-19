@@ -1,9 +1,7 @@
-const { Configuration, OpenAIApi } = require("openai");
 const { Client, Message } = require("discord.js");
-const { Conversations, Messages } = require("../../schemas/conversations");
-const { Users, Self } = require("../../schemas/users");
-const { EmotionStatus } = require("../../schemas/emotionSchemas");
-const { SentimentStatus } = require("../../schemas/sentimentSchemas");
+const {Messages } = require("../../mongoSchemas/conversationSchema");
+const { EmotionStatus } = require("../../mongoSchemas/emotionSchemas");
+const { SentimentStatus } = require("../../mongoSchemas/sentimentSchemas");
 const {
   openai,
   MIN_EMOTION_VALUE,
@@ -12,19 +10,23 @@ const {
   MAX_SENTIMENT_VALUE,
   CHOICE_RESPOND,
   CHOICE_IGNORE,
-  getEmotionStatusSchema,
+  MIN_PERSONALITY_VALUE,
+  MAX_PERSONALITY_VALUE,
+  EXTRINSIC_RELATIONSHIPS,
+  NO_INTRINSIC_RELATIONSHIP,
+} = require("../../constants/constants");
+const {getEmotionStatusSchema,
   getMessageSchema,
   getSummarySchema,
   getResponseChoiceSchema,
   getIdentitySchema,
   getSentimentStatusSchema,
   getPersonalityStatusSchema,
-  MIN_PERSONALITY_VALUE,
-  MAX_PERSONALITY_VALUE,
-  EXTRINSIC_RELATIONSHIPS,
-  getExtrinsicRelationshipSchema,
-  NO_INTRINSIC_RELATIONSHIP,
-} = require("../../constants/constants");
+  getExtrinsicRelationshipSchema} = require("../../constants/schemas");
+
+const {GrabSelf, GrabUser, GetConversation} = require("../../services/mongoService");
+const {DeepMerge, AlterPersonality} = require("../../utils/logicHelpers");
+const {GetStructuredQueryResponse} = require("../../services/aiService");
 
 /**
  * @brief Handle a message sent in the server.
@@ -40,17 +42,9 @@ module.exports = async (client, msg) => {
   async function handleUserMessage() {
     let self = await GrabSelf(process.env.BOT_NAME);
     let user = await GrabUser(msg.author.id);
-
-    let userConversation =
-      (await Conversations.findOne({
-        user_id: user.user_id,
-      })) || new Conversations({ user_id: user.user_id });
     const spliceBound = 5;
+    let userConversation = await GetConversation(user.user_id);
     let userMessages = userConversation.messages.slice(-spliceBound);
-
-    //console.log("USER MESSAGES");
-    //console.log(userMessages);
-
     let receiveDate = new Date();
 
     let ongoingConversationString =
@@ -73,6 +67,7 @@ module.exports = async (client, msg) => {
         intrinsicRelationship = `${user.name} is the one who created ${self.name}, they are their ${user.intrinsic_relationship}`;
         break;
       case 'brother':
+      case 'sister':
         intrinsicRelationship = `${self.name} recognizes ${user.name} as their ${user.intrinsic_relationship}.`;
         break;
       case NO_INTRINSIC_RELATIONSHIP:
@@ -95,8 +90,6 @@ module.exports = async (client, msg) => {
       self.emotional_status
     )}.`;
 
-    
-
     // MESSAGE ANALYSIS
     let initialEmotionQuery = {
       role: "user",
@@ -117,7 +110,7 @@ module.exports = async (client, msg) => {
 
     console.log("INITIAL EMOTIONAL RESPONSE");
     const initialEmotionQueryResponse =
-      await GetStructuredInnerDialogueResponse(
+      await GetStructuredQueryResponse(
         innerDialogue,
         getEmotionStatusSchema()
       );
@@ -142,13 +135,11 @@ module.exports = async (client, msg) => {
         role: "user",
         content: `This is ${self.name}'s personality: ${alteredPersonality}. This is their current emotional state: ${self.emotional_status}. This is what they think about ${user.name}: ${user.summary}. ${intrinsicRelationship} ${extrinsicRelationship} This is the ongoing conversation between them: ${ongoingConversationString}. How would ${self.name} perceive the purpose and tone of ${user.name}'s new message: ${msg.content}. Provide the message "${msg.content}", purpose, and tone in a JSON object with the properties of message, purpose, and tone.`,
       },
-    ];
-
-    //innerDialogue.push(messageReceivedQuery);
+    ];  
 
     console.log("MESSAGE RECEIVED INTERPRETATION");
     const messageReceivedQueryResponse =
-      await GetStructuredInnerDialogueResponse(
+      await GetStructuredQueryResponse(
         messageQueries,
         getMessageSchema()
       );
@@ -173,7 +164,7 @@ module.exports = async (client, msg) => {
 
     console.log("RESPONSE CHOICE");
     const responseChoiceQueryResponse =
-      await GetStructuredInnerDialogueResponse(
+      await GetStructuredQueryResponse(
         messageQueries,
         getResponseChoiceSchema()
       );
@@ -199,17 +190,10 @@ module.exports = async (client, msg) => {
       messageQueries.push(messageResponseQuery);
 
       console.log("MESSAGE RESPONSE");
-      messageResponseQueryResponse = await GetStructuredInnerDialogueResponse(
+      messageResponseQueryResponse = await GetStructuredQueryResponse(
         messageQueries,
         getMessageSchema()
       );
-
-      /*
-      innerDialogue.push({
-        role: "assistant",
-        content: `${JSON.stringify(messageResponseQueryResponse)}`,
-      });
-      */
 
       if (!messageResponseQueryResponse) {
         msg.reply("Error generating response");
@@ -225,7 +209,7 @@ module.exports = async (client, msg) => {
 
       console.log("FINAL EMOTIONAL RESPONSE");
       const finalEmotionQueryResponse =
-        await GetStructuredInnerDialogueResponse(
+        await GetStructuredQueryResponse(
           innerDialogue,
           getEmotionStatusSchema()
         );
@@ -255,7 +239,7 @@ module.exports = async (client, msg) => {
 
       console.log("FINAL EMOTIONAL RESPONSE");
       const finalEmotionQueryResponse =
-        await GetStructuredInnerDialogueResponse(
+        await GetStructuredQueryResponse(
           innerDialogue,
           getEmotionStatusSchema()
         );
@@ -282,7 +266,7 @@ module.exports = async (client, msg) => {
     innerDialogue.push(sentimentQuery);
 
     console.log("SENTIMENT CHANGES");
-    const sentimentQueryResponse = await GetStructuredInnerDialogueResponse(
+    const sentimentQueryResponse = await GetStructuredQueryResponse(
       innerDialogue,
       getSentimentStatusSchema()
     );
@@ -308,7 +292,7 @@ module.exports = async (client, msg) => {
     innerDialogue.push(summaryQuery);
 
     console.log("SUMMARY CHANGES");
-    const summaryQueryResponse = await GetStructuredInnerDialogueResponse(
+    const summaryQueryResponse = await GetStructuredQueryResponse(
       innerDialogue,
       getSummarySchema()
     );
@@ -331,7 +315,7 @@ module.exports = async (client, msg) => {
 
     innerDialogue.push(extrinsicRelationshipQuery);
     console.log("EXTRINSIC CHANGES");
-    const extrinsicRelationshipQueryResponse = await GetStructuredInnerDialogueResponse(
+    const extrinsicRelationshipQueryResponse = await GetStructuredQueryResponse(
       innerDialogue,
       getExtrinsicRelationshipSchema()
     );
@@ -355,7 +339,7 @@ module.exports = async (client, msg) => {
     innerDialogue.push(identityQuery);
 
     console.log("IDENTITY CHANGES");
-    const identityQueryResponse = await GetStructuredInnerDialogueResponse(
+    const identityQueryResponse = await GetStructuredQueryResponse(
       innerDialogue,
       getIdentitySchema()
     );
@@ -399,112 +383,6 @@ module.exports = async (client, msg) => {
     user.last_interaction = receiveDate;
 
     await Promise.all([self.save(), user.save(), userConversation.save()]);
-  }
-
-  async function AlterPersonality(self, user, extrinsicRelationship) {
-    let personality = self.personality_matrix;
-    let sentiment = user.sentiment_status;
-
-    let alterQuery = [
-      {
-        role: "user",
-        content: `These are ${self.name}'s personality traits: ${JSON.stringify(
-          personality
-        )}. These are ${self.name}'s sentiments towards ${
-          user.name
-        }: ${sentiment}. ${extrinsicRelationship} How would these sentiments and extrinsic relationship alter ${
-          self.name
-        }'s personality when interacting with ${
-          user.name
-        }? Provide the new object (only the personality traits whose value properties have changed, whether increased or decreased). Scale: ${MIN_PERSONALITY_VALUE} (lowest intensity) to ${MAX_PERSONALITY_VALUE} (highest intensity)`,
-      },
-    ];
-
-    let alterQueryResponse = await GetStructuredInnerDialogueResponse(
-      alterQuery,
-      getPersonalityStatusSchema()
-    );
-
-    let alteredPersonality = DeepMerge(personality, alterQueryResponse);
-
-    return alteredPersonality;
-  }
-
-  function DeepMerge(target, source) {
-    for (const key in source) {
-      if (source[key] instanceof Object && key in target) {
-        target[key] = DeepMerge(target[key], source[key]);
-      } else {
-        target[key] = source[key];
-      }
-    }
-    return target;
-  }
-
-  async function GetStructuredInnerDialogueResponse(innerDialogue, structure) {
-    try {
-      const response = await openai.createChatCompletion({
-        model: "gpt-4o-mini",
-        messages: innerDialogue,
-        response_format: structure,
-      });
-      console.log("---");
-      console.log(
-        JSON.stringify(JSON.parse(response.data.choices[0].message.content))
-      );
-      console.log("---");
-
-      const parsed = JSON.parse(
-        response.data.choices[0].message.content.trim()
-      );
-
-      return parsed;
-    } catch (error) {
-      msg.reply(`System Error: ${error.message}`);
-      return null;
-    }
-  }
-
-  async function GrabUser(authorId) {
-    let user = await Users.findOne({ discord_id: authorId });
-
-    let intrinsicRelationship;
-
-    switch (authorId){
-      case process.env.DEVELOPER_ID:
-        intrinsicRelationship = 'creator and master';
-        break;
-      default:
-        intrinsicRelationship = NO_INTRINSIC_RELATIONSHIP;
-        break;
-    }
-
-    if (!user) {
-      user = new Users({
-        name: msg.author.username,
-        discord_id: msg.author.id,
-        intrinsic_relationship: intrinsicRelationship,
-      });
-      await user.save();
-      user = await Users.findOne({ discord_id: authorId });
-    }
-
-    return user;
-  }
-
-  async function GrabSelf(agentName) {
-    let self = await Self.findOne({ name: agentName });
-
-    if (!self) {
-      self = new Self({
-        name: process.env.BOT_NAME,
-        personality_matrix: JSON.parse(process.env.BOT_PERSONALITY_MATRIX),
-      });
-
-      await self.save();
-      self = await Self.findOne({ name: agentName });
-    }
-    return self;
   }
 
   handleUserMessage();

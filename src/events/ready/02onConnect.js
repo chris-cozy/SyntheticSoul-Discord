@@ -1,13 +1,17 @@
-const { ActivityType, Client, User } = require("discord.js");
-const { Self, Activity, Users } = require("../../schemas/users");
-const { Thought } = require("../../schemas/thoughtSchema");
-const { EmotionStatus } = require("../../schemas/emotionSchemas");
+const { ActivityType, Client } = require("discord.js");
+const { Activity, Users } = require("../../mongoSchemas/users");
+const { Thought } = require("../../mongoSchemas/thoughtSchema");
+const { EmotionStatus } = require("../../mongoSchemas/emotionSchemas");
 const {
-  openai,
   MIN_EMOTION_VALUE,
   MAX_EMOTION_VALUE,
   MIN_SENTIMENT_VALUE,
   MAX_SENTIMENT_VALUE,
+  THOUGHT_RATE,
+  ACTIVITY_RATE,
+  EMOTIONAL_DECAY_RATE,
+} = require("../../constants/constants");
+const {
   getActivitySchema,
   getItemSchema,
   getReasonSchema,
@@ -17,7 +21,12 @@ const {
   getEmotionStatusSchema,
   getIdentitySchema,
   getIsActionSchema,
-} = require("../../constants/constants");
+} = require("../../constants/schemas");
+
+const {GrabSelf} = require("../../services/mongoService");
+const {DeepMerge, GetType, MinutesToMilliseconds} = require("../../utils/logicHelpers");
+const {GetStructuredQueryResponse} = require("../../services/aiService");
+
 /**
  * @brief
  * @param {Client} client - The bot
@@ -41,7 +50,7 @@ module.exports = async (client) => {
         this.items.push(item);
       }
     }
-    let self = await grabSelf(process.env.BOT_NAME);
+    let self = await GrabSelf(process.env.BOT_NAME);
 
     const room = new Room();
 
@@ -105,11 +114,10 @@ module.exports = async (client) => {
       }
     };
 
-    let activityQueryResponse = { duration: 1800000 }; // 30 minutes
     // ACTIVITY LOOP //
-    const activityLoop = async () => {
+    const activityLoop = async (activityRate) => {
       try {
-        let self = await grabSelf(process.env.BOT_NAME);
+        let self = await GrabSelf(process.env.BOT_NAME);
         let today = new Date();
         let limit = 3;
         let todaysActivities = await getActivitiesForDay(today, limit);
@@ -133,7 +141,7 @@ module.exports = async (client) => {
 
         let innerDialogue = isActionQuery;
 
-        let isActionQueryResponse = await getStructuredQueryResponse(
+        let isActionQueryResponse = await GetStructuredQueryResponse(
           innerDialogue,
           getIsActionSchema()
         );
@@ -157,7 +165,7 @@ module.exports = async (client) => {
 
           innerDialogue.push(categoryQuery);
 
-          let categoryQueryResponse = await getStructuredQueryResponse(
+          let categoryQueryResponse = await GetStructuredQueryResponse(
             innerDialogue,
             getCategorySchema()
           );
@@ -176,7 +184,7 @@ module.exports = async (client) => {
             content: activityQuery,
           });
 
-          let activityQueryResponse = await getStructuredQueryResponse(
+          let activityQueryResponse = await GetStructuredQueryResponse(
             innerDialogue,
             getActivitySchema()
           );
@@ -186,7 +194,7 @@ module.exports = async (client) => {
             content: `${JSON.stringify(activityQueryResponse)}`,
           });
 
-          let activityType = getType(isActionQueryResponse.category);
+          let activityType = GetType(isActionQueryResponse.category);
 
           let itemQuery = `Which item in ${
             self.name
@@ -201,7 +209,7 @@ module.exports = async (client) => {
             content: itemQuery,
           });
 
-          let itemQueryResponse = await getStructuredQueryResponse(
+          let itemQueryResponse = await GetStructuredQueryResponse(
             innerDialogue,
             getItemSchema()
           );
@@ -218,7 +226,7 @@ module.exports = async (client) => {
             content: reasonQuery,
           });
 
-          let reasonQueryResponse = await getStructuredQueryResponse(
+          let reasonQueryResponse = await GetStructuredQueryResponse(
             innerDialogue,
             getReasonSchema()
           );
@@ -230,13 +238,13 @@ module.exports = async (client) => {
             },
           ];
 
-          let emotionalImpactQueryResponse = await getStructuredQueryResponse(
+          let emotionalImpactQueryResponse = await GetStructuredQueryResponse(
             emotionalImpactQuery,
             getEmotionStatusSchema()
           );
 
           self.emotional_status = new EmotionStatus(
-            NerfedDeepMerge(self.emotional_status, emotionalImpactQueryResponse)
+            DeepMerge(self.emotional_status, emotionalImpactQueryResponse, true)
           );
 
           client.user.setPresence({
@@ -249,11 +257,14 @@ module.exports = async (client) => {
             status: "online",
           });
 
+          let now = new Date();
+
           self.activity_status = new Activity({
             name: activityQueryResponse.activity,
             category: isActionQueryResponse.category,
             reason: reasonQueryResponse.reason,
             item: itemQueryResponse.item,
+            start_time: now,
           });
 
           const activityRecord = new Activity({
@@ -261,7 +272,10 @@ module.exports = async (client) => {
             category: isActionQueryResponse.category,
             reason: reasonQueryResponse.reason,
             item: itemQueryResponse.item,
+            start_time: now,
           });
+
+          activityRate = activityQueryResponse.duration;
 
           await self.save();
           await activityRecord.save();
@@ -276,43 +290,48 @@ module.exports = async (client) => {
             status: "idle",
           });
 
-          
-          self.activity_status = new Activity({});
+          let now = new Date();
+          self.activity_status = new Activity({start_time: now});
 
-          activityQueryResponse = { duration: 1800000 }; // 30 minutes
+          const activityRecord = new Activity({
+            start_time: now
+          });
+
+          activityRate =  1800000; // 30 minutes
           await self.save();
+          await activityRecord.save();
         }
       } catch (error) {
-        console.log(`Error during activity update: ${error}`);
+        console.log(`System Error: ${error.message}`);
       }
-      setTimeout(activityLoop, activityQueryResponse.duration);
+      setTimeout(() => activityLoopLoop(activityRate), activityRate);
     };
 
     // EMOTIONAL DECAY //
-    const decayRate = 60000; //1 minute
-    const emotionDecay = async () => {
+    const emotionDecayLoop = async (decayRate) => {
       try {
-        self = await grabSelf(process.env.BOT_NAME);
+        self = await GrabSelf(process.env.BOT_NAME);
         const emotions = self.emotional_status.emotions.toObject();
         Object.entries(emotions).forEach(([emotion, data]) => {
           if (data.value > MIN_EMOTION_VALUE) {
             data.value -= 1;
             self.emotional_status.emotions[emotion].value = data.value;
+            if (self.emotional_status.emotions[emotion].value < 0){
+              self.emotional_status.emotions[emotion].value = 0;
+            }
             console.log(`Emotional decay: ${emotion} : ${data.value}`);
           }
         });
-
         await self.save();
       } catch (error) {
         console.log(`Error during emotional decay: ${error}`);
       }
-      setTimeout(emotionDecay, decayRate);
+      setTimeout(() => emotionDecayLoop(decayRate), decayRate);
     };
 
     // THOUGHT LOOP //
-    const thoughtRate = 3600000; //60 minute
-    const thinkingLoop = async () => {
-      let self = await grabSelf(process.env.BOT_NAME);
+    const thinkingLoop = async (thoughtRate) => {
+      let self = await GrabSelf(process.env.BOT_NAME);
       let recentThoughts = await Thought.find()
         .sort({ _id: -1 }) // Sort in descending order by _id (newest first)
         .limit(1);
@@ -349,7 +368,7 @@ module.exports = async (client) => {
         },
       ];
 
-      let isThinkingQueryResponse = await getStructuredQueryResponse(
+      let isThinkingQueryResponse = await GetStructuredQueryResponse(
         isThinkingQuery,
         getIsThinkingSchema()
       );
@@ -374,19 +393,10 @@ module.exports = async (client) => {
           },
         ];
 
-        //queries.push(thoughtQuery);
-
-        let thoughtQueryResponse = await getStructuredQueryResponse(
+        let thoughtQueryResponse = await GetStructuredQueryResponse(
           thoughtQuery,
           getThoughtSchema()
         );
-
-        /*
-        queries.push({
-          role: "assistant",
-          content: `${JSON.stringify(thoughtQueryResponse)}`,
-        });
-        */
 
         let emotionalReaction = {
           role: "user",
@@ -394,7 +404,7 @@ module.exports = async (client) => {
         };
         queries.push(emotionalReaction);
 
-        let emotionalAffectQueryResponse = await getStructuredQueryResponse(
+        let emotionalAffectQueryResponse = await GetStructuredQueryResponse(
           queries,
           getEmotionStatusSchema()
         );
@@ -411,7 +421,7 @@ module.exports = async (client) => {
 
         queries.push(identityQuery);
 
-        let identityAffectQueryResponse = await getStructuredQueryResponse(
+        let identityAffectQueryResponse = await GetStructuredQueryResponse(
           queries,
           getIdentitySchema()
         );
@@ -419,7 +429,7 @@ module.exports = async (client) => {
         self.identity = identityAffectQueryResponse.identity;
 
         self.emotional_status = new EmotionStatus(
-          NerfedDeepMerge(self.emotional_status, emotionalAffectQueryResponse)
+          DeepMerge(self.emotional_status, emotionalAffectQueryResponse, true)
         );
 
         const thought = new Thought({
@@ -431,90 +441,13 @@ module.exports = async (client) => {
         thought.save();
       }
 
-      setTimeout(thinkingLoop, thoughtRate);
+      setTimeout(() => thoughtLoop(thoughtRate), thoughtRate);
     };
 
-    thinkingLoop();
-    emotionDecay();
-    activityLoop();
+    thinkingLoop(MinutesToMilliseconds(THOUGHT_RATE));
+    emotionDecayLoop(MinutesToMilliseconds(EMOTIONAL_DECAY_RATE));
+    activityLoop(MinutesToMilliseconds(ACTIVITY_RATE));
   } catch (error) {
-    console.log(`There was an error: ${error}`);
-  }
-
-  async function grabSelf(agentName) {
-    let self = await Self.findOne({ name: agentName });
-
-    if (!self) {
-      self = new Self({
-        name: process.env.BOT_NAME,
-        personality_matrix: JSON.parse(process.env.BOT_PERSONALITY_MATRIX),
-      });
-
-      await self.save();
-      self = await Self.findOne({ name: agentName });
-    }
-    return self;
-  }
-
-  function getType(type) {
-    switch (type) {
-      case "streaming":
-        return ActivityType.Streaming;
-      case "watching":
-        return ActivityType.Watching;
-      case "custom":
-        return ActivityType.Custom;
-      case "listening":
-        return ActivityType.Listening;
-      case "playing":
-        return ActivityType.Playing;
-      default:
-        return ActivityType.Custom;
-    }
-  }
-
-  function DeepMerge(target, source) {
-    for (const key in source) {
-      if (source[key] instanceof Object && key in target) {
-        target[key] = DeepMerge(target[key], source[key]);
-      } else {
-        target[key] = source[key];
-      }
-    }
-    return target;
-  }
-
-  function NerfedDeepMerge(target, source) {
-    for (const key in source) {
-      if (source[key] instanceof Object && key in target) {
-        target[key] = DeepMerge(target[key], source[key]);
-      } else {
-        target[key] = (target[key] + source[key]) / 2;
-      }
-    }
-    return target;
-  }
-
-  async function getStructuredQueryResponse(query, schema) {
-    try {
-      const response = await openai.createChatCompletion({
-        model: "gpt-4o-mini",
-        messages: query,
-        response_format: schema,
-      });
-      console.log("---");
-      console.log(
-        JSON.stringify(JSON.parse(response.data.choices[0].message.content))
-      );
-      console.log("---");
-
-      const parsed = JSON.parse(
-        response.data.choices[0].message.content.trim()
-      );
-
-      return parsed;
-    } catch (error) {
-      return null;
-    }
+    console.log(`System Error: ${error.message}`);
   }
 };

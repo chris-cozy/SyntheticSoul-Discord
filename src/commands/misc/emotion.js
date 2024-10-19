@@ -1,6 +1,6 @@
 const { EmbedBuilder } = require("discord.js");
 const { Client, Interaction } = require("discord.js");
-const { Users, Self } = require("../../schemas/users");
+const {GrabSelf} = require("../../services/mongoService");
 
 module.exports = {
   name: "emotion",
@@ -10,27 +10,12 @@ module.exports = {
   deleted: false,
 
   /**
-   * @brief Send an embed with bot emotiong information
+   * @brief Send an embed with program's emotion information
    * @param {Client} client
    * @param {Interaction} interaction
    */
   callback: async (client, interaction) => {
     let self = await GrabSelf(process.env.BOT_NAME);
-
-    async function GrabSelf(agentName) {
-      let self = await Self.findOne({ name: agentName });
-
-      if (!self) {
-        self = new Self({
-          name: process.env.BOT_NAME,
-          personality_matrix: JSON.parse(process.env.BOT_PERSONALITY_MATRIX),
-        });
-
-        await self.save();
-        self = await Self.findOne({ name: agentName });
-      }
-      return self;
-    }
 
     let embed;
 
@@ -60,7 +45,7 @@ module.exports = {
 
     } catch (error) {
       interaction.reply({ embeds: [embed] });
-      console.log(`Error - ${error}`);
+      console.log(`Error - ${error.message}`);
     }
   },
 };
