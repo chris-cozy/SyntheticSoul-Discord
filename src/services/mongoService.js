@@ -1,4 +1,5 @@
 const { Users, Self } = require("../schemas/users");
+const { Conversations } = require("../schemas/conversationSchema");
 
 
 /**
@@ -52,3 +53,19 @@ export const GrabSelf = async (agentName) => {
   }
   return self;
 };
+
+
+/**
+* @brief Grab conversation messages in an array based on the user id.
+* @param {String} userId - Discord Id of the user
+* @param {int} messageCount - Number of messages to return
+* @returns Array of message objects
+*/
+export const GetConversationSnippet = async (userId, messageCount) => {
+    let userConversation =
+      (await Conversations.findOne({
+        user_id: userId,
+      })) || new Conversations({ user_id: userId });
+    let userMessages = userConversation.messages.slice(-messageCount);
+    return userMessages;
+}

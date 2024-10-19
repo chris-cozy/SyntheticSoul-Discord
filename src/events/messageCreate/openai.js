@@ -1,6 +1,6 @@
 const { Configuration, OpenAIApi } = require("openai");
 const { Client, Message } = require("discord.js");
-const { Conversations, Messages } = require("../../schemas/conversations");
+const { Conversations, Messages } = require("../../schemas/conversationSchema");
 const { Users, Self } = require("../../schemas/users");
 const { EmotionStatus } = require("../../schemas/emotionSchemas");
 const { SentimentStatus } = require("../../schemas/sentimentSchemas");
@@ -26,7 +26,7 @@ const {
   NO_INTRINSIC_RELATIONSHIP,
 } = require("../../constants/constants");
 
-const {GrabSelf, GrabUser} = require("../../services/mongoService");
+const {GrabSelf, GrabUser, GetConversationSnippet} = require("../../services/mongoService");
 const {DeepMerge, AlterPersonality} = require("../../utils/logicHelpers");
 const {GetStructuredInnerDialogueResponse} = require("../../services/aiService");
 
@@ -45,13 +45,7 @@ module.exports = async (client, msg) => {
     let self = await GrabSelf(process.env.BOT_NAME);
     let user = await GrabUser(msg.author.id);
 
-    let userConversation =
-      (await Conversations.findOne({
-        user_id: user.user_id,
-      })) || new Conversations({ user_id: user.user_id });
-    const spliceBound = 5;
-    let userMessages = userConversation.messages.slice(-spliceBound);
-
+    let userMessages = await GetConversationSnippet(user.user_id, spliceBound);
     let receiveDate = new Date();
 
     let ongoingConversationString =
@@ -74,6 +68,7 @@ module.exports = async (client, msg) => {
         intrinsicRelationship = `${user.name} is the one who created ${self.name}, they are their ${user.intrinsic_relationship}`;
         break;
       case 'brother':
+      case 'sister':
         intrinsicRelationship = `${self.name} recognizes ${user.name} as their ${user.intrinsic_relationship}.`;
         break;
       case NO_INTRINSIC_RELATIONSHIP:
@@ -143,9 +138,7 @@ module.exports = async (client, msg) => {
         role: "user",
         content: `This is ${self.name}'s personality: ${alteredPersonality}. This is their current emotional state: ${self.emotional_status}. This is what they think about ${user.name}: ${user.summary}. ${intrinsicRelationship} ${extrinsicRelationship} This is the ongoing conversation between them: ${ongoingConversationString}. How would ${self.name} perceive the purpose and tone of ${user.name}'s new message: ${msg.content}. Provide the message "${msg.content}", purpose, and tone in a JSON object with the properties of message, purpose, and tone.`,
       },
-    ];
-
-    //innerDialogue.push(messageReceivedQuery);
+    ];  
 
     console.log("MESSAGE RECEIVED INTERPRETATION");
     const messageReceivedQueryResponse =
@@ -204,13 +197,6 @@ module.exports = async (client, msg) => {
         messageQueries,
         getMessageSchema()
       );
-
-      /*
-      innerDialogue.push({
-        role: "assistant",
-        content: `${JSON.stringify(messageResponseQueryResponse)}`,
-      });
-      */
 
       if (!messageResponseQueryResponse) {
         msg.reply("Error generating response");
