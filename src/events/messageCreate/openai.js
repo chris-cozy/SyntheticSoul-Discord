@@ -26,6 +26,8 @@ const {
   NO_INTRINSIC_RELATIONSHIP,
 } = require("../../constants/constants");
 
+const {GrabSelf, GrabUser} = require("../../services/mongoService");
+
 /**
  * @brief Handle a message sent in the server.
  * @param {Client} client - The bot
@@ -463,48 +465,6 @@ module.exports = async (client, msg) => {
       msg.reply(`System Error: ${error.message}`);
       return null;
     }
-  }
-
-  async function GrabUser(authorId) {
-    let user = await Users.findOne({ discord_id: authorId });
-
-    let intrinsicRelationship;
-
-    switch (authorId){
-      case process.env.DEVELOPER_ID:
-        intrinsicRelationship = 'creator and master';
-        break;
-      default:
-        intrinsicRelationship = NO_INTRINSIC_RELATIONSHIP;
-        break;
-    }
-
-    if (!user) {
-      user = new Users({
-        name: msg.author.username,
-        discord_id: msg.author.id,
-        intrinsic_relationship: intrinsicRelationship,
-      });
-      await user.save();
-      user = await Users.findOne({ discord_id: authorId });
-    }
-
-    return user;
-  }
-
-  async function GrabSelf(agentName) {
-    let self = await Self.findOne({ name: agentName });
-
-    if (!self) {
-      self = new Self({
-        name: process.env.BOT_NAME,
-        personality_matrix: JSON.parse(process.env.BOT_PERSONALITY_MATRIX),
-      });
-
-      await self.save();
-      self = await Self.findOne({ name: agentName });
-    }
-    return self;
   }
 
   handleUserMessage();

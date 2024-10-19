@@ -18,6 +18,9 @@ const {
   getIdentitySchema,
   getIsActionSchema,
 } = require("../../constants/constants");
+
+const {GrabSelf, GrabUser} = require("../../services/mongoService");
+
 /**
  * @brief
  * @param {Client} client - The bot
@@ -41,7 +44,7 @@ module.exports = async (client) => {
         this.items.push(item);
       }
     }
-    let self = await grabSelf(process.env.BOT_NAME);
+    let self = await GrabSelf(process.env.BOT_NAME);
 
     const room = new Room();
 
@@ -109,7 +112,7 @@ module.exports = async (client) => {
     // ACTIVITY LOOP //
     const activityLoop = async () => {
       try {
-        let self = await grabSelf(process.env.BOT_NAME);
+        let self = await GrabSelf(process.env.BOT_NAME);
         let today = new Date();
         let limit = 3;
         let todaysActivities = await getActivitiesForDay(today, limit);
@@ -292,7 +295,7 @@ module.exports = async (client) => {
     const decayRate = 120000; //2 minutes
     const emotionDecay = async () => {
       try {
-        self = await grabSelf(process.env.BOT_NAME);
+        self = await GrabSelf(process.env.BOT_NAME);
         const emotions = self.emotional_status.emotions.toObject();
         Object.entries(emotions).forEach(([emotion, data]) => {
           if (data.value > MIN_EMOTION_VALUE) {
@@ -312,7 +315,7 @@ module.exports = async (client) => {
     // THOUGHT LOOP //
     const thoughtRate = 3600000; //60 minute
     const thinkingLoop = async () => {
-      let self = await grabSelf(process.env.BOT_NAME);
+      let self = await GrabSelf(process.env.BOT_NAME);
       let recentThoughts = await Thought.find()
         .sort({ _id: -1 }) // Sort in descending order by _id (newest first)
         .limit(1);
@@ -439,21 +442,6 @@ module.exports = async (client) => {
     activityLoop();
   } catch (error) {
     console.log(`There was an error: ${error}`);
-  }
-
-  async function grabSelf(agentName) {
-    let self = await Self.findOne({ name: agentName });
-
-    if (!self) {
-      self = new Self({
-        name: process.env.BOT_NAME,
-        personality_matrix: JSON.parse(process.env.BOT_PERSONALITY_MATRIX),
-      });
-
-      await self.save();
-      self = await Self.findOne({ name: agentName });
-    }
-    return self;
   }
 
   function getType(type) {
