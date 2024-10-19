@@ -28,8 +28,7 @@ const activitySchema = new Schema({
   },
   start_time: {
     type: Date,
-    required: false,
-    default: new Date(),
+    required: true,
   },
 });
 

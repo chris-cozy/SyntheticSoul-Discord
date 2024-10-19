@@ -252,11 +252,14 @@ module.exports = async (client) => {
             status: "online",
           });
 
+          let now = new Date();
+
           self.activity_status = new Activity({
             name: activityQueryResponse.activity,
             category: isActionQueryResponse.category,
             reason: reasonQueryResponse.reason,
             item: itemQueryResponse.item,
+            start_time: now,
           });
 
           const activityRecord = new Activity({
@@ -264,6 +267,7 @@ module.exports = async (client) => {
             category: isActionQueryResponse.category,
             reason: reasonQueryResponse.reason,
             item: itemQueryResponse.item,
+            start_time: now,
           });
 
           await self.save();
@@ -279,11 +283,16 @@ module.exports = async (client) => {
             status: "idle",
           });
 
-          
-          self.activity_status = new Activity({});
+          let now = new Date();
+          self.activity_status = new Activity({start_time: now});
+
+          const activityRecord = new Activity({
+            start_time: now
+          });
 
           activityQueryResponse = { duration: 1800000 }; // 30 minutes
           await self.save();
+          await activityRecord.save();
         }
       } catch (error) {
         console.log(`Error during activity update: ${error}`);
