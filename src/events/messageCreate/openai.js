@@ -27,6 +27,7 @@ const {
 } = require("../../constants/constants");
 
 const {GrabSelf, GrabUser} = require("../../services/mongoService");
+const {DeepMerge} = require("../../utils/logicHelpers");
 
 /**
  * @brief Handle a message sent in the server.
@@ -430,17 +431,6 @@ module.exports = async (client, msg) => {
     let alteredPersonality = DeepMerge(personality, alterQueryResponse);
 
     return alteredPersonality;
-  }
-
-  function DeepMerge(target, source) {
-    for (const key in source) {
-      if (source[key] instanceof Object && key in target) {
-        target[key] = DeepMerge(target[key], source[key]);
-      } else {
-        target[key] = source[key];
-      }
-    }
-    return target;
   }
 
   async function GetStructuredInnerDialogueResponse(innerDialogue, structure) {

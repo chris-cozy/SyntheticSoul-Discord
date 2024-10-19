@@ -20,6 +20,7 @@ const {
 } = require("../../constants/constants");
 
 const {GrabSelf, GrabUser} = require("../../services/mongoService");
+const {DeepMerge, GetType} = require("../../utils/logicHelpers");
 
 /**
  * @brief
@@ -189,7 +190,7 @@ module.exports = async (client) => {
             content: `${JSON.stringify(activityQueryResponse)}`,
           });
 
-          let activityType = getType(isActionQueryResponse.category);
+          let activityType = GetType(isActionQueryResponse.category);
 
           let itemQuery = `Which item in ${
             self.name
@@ -239,7 +240,7 @@ module.exports = async (client) => {
           );
 
           self.emotional_status = new EmotionStatus(
-            NerfedDeepMerge(self.emotional_status, emotionalImpactQueryResponse)
+            DeepMerge(self.emotional_status, emotionalImpactQueryResponse, true)
           );
 
           client.user.setPresence({
@@ -431,7 +432,7 @@ module.exports = async (client) => {
         self.identity = identityAffectQueryResponse.identity;
 
         self.emotional_status = new EmotionStatus(
-          NerfedDeepMerge(self.emotional_status, emotionalAffectQueryResponse)
+          DeepMerge(self.emotional_status, emotionalAffectQueryResponse, true)
         );
 
         const thought = new Thought({
@@ -451,45 +452,6 @@ module.exports = async (client) => {
     activityLoop();
   } catch (error) {
     console.log(`There was an error: ${error}`);
-  }
-
-  function getType(type) {
-    switch (type) {
-      case "streaming":
-        return ActivityType.Streaming;
-      case "watching":
-        return ActivityType.Watching;
-      case "custom":
-        return ActivityType.Custom;
-      case "listening":
-        return ActivityType.Listening;
-      case "playing":
-        return ActivityType.Playing;
-      default:
-        return ActivityType.Custom;
-    }
-  }
-
-  function DeepMerge(target, source) {
-    for (const key in source) {
-      if (source[key] instanceof Object && key in target) {
-        target[key] = DeepMerge(target[key], source[key]);
-      } else {
-        target[key] = source[key];
-      }
-    }
-    return target;
-  }
-
-  function NerfedDeepMerge(target, source) {
-    for (const key in source) {
-      if (source[key] instanceof Object && key in target) {
-        target[key] = DeepMerge(target[key], source[key]);
-      } else {
-        target[key] = (target[key] + source[key]) / 2;
-      }
-    }
-    return target;
   }
 
   async function getStructuredQueryResponse(query, schema) {
