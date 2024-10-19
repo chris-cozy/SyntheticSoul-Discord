@@ -1484,6 +1484,24 @@ const getThoughtSchema = () => ({
   },
 });
 
+const getIsActionSchema = () => ({
+  type: "json_schema",
+  json_schema: {
+    name: "is_action",
+    schema: {
+      type: "object",
+      properties: {
+        is_action: {
+          description:
+            "Whether or not they want to perform an action.",
+          type: "string",
+        },
+      },
+      additionalProperties: false,
+    },
+  },
+});
+
 module.exports = {
   openai,
   MIN_EMOTION_VALUE,
@@ -1511,4 +1529,5 @@ module.exports = {
   getExtrinsicRelationshipSchema,
   getIsThinkingSchema,
   getThoughtSchema,
+  getIsActionSchema,
 };
