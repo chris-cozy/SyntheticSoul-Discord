@@ -1,8 +1,8 @@
 const { Schema, model, Types } = require("mongoose");
-const {EmotionModifier, EmotionStatusSchema} = require("./emotionSchemas");
+const {EmotionStatusSchema} = require("./emotionSchemas");
 const {SentimentStatusSchema} = require("./sentimentSchemas");
 const {ThoughtSchema} = require("./thoughtSchema");
-const {Personality, PersonalityModifier} = require("./personalitySchema");
+const {Personality} = require("./personalitySchema");
 const { EXTRINSIC_RELATIONSHIPS, NO_INTRINSIC_RELATIONSHIP, INTRINSIC_RELATIONSHIPS } = require("../constants/constants");
 
 const activitySchema = new Schema({
