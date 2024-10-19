@@ -8,11 +8,13 @@ const { EXTRINSIC_RELATIONSHIPS, NO_INTRINSIC_RELATIONSHIP, INTRINSIC_RELATIONSH
 const activitySchema = new Schema({
   name: {
     type: String,
-    required: true,
+    required: false,
+    default: 'Quiescence.'
   },
   category: {
     type: String,
-    required: true,
+    required: false,
+    default: 'custom'
   },
   item: {
     type: String,
@@ -20,7 +22,8 @@ const activitySchema = new Schema({
   },
   reason: {
     type: String,
-    required: true,
+    required: false,
+    default: 'Simply existing.'
   },
   start_time: {
     type: Date,
@@ -88,9 +91,6 @@ const selfSchema = new Schema({
     type: activitySchema,
     required: false,
     default: {
-      name: "Simply existing.",
-      category: "custom",
-      reason: "Liminality."
     },
   },
 });
