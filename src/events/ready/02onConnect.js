@@ -1,13 +1,17 @@
-const { ActivityType, Client, User } = require("discord.js");
-const { Self, Activity, Users } = require("../../schemas/users");
-const { Thought } = require("../../schemas/thoughtSchema");
-const { EmotionStatus } = require("../../schemas/emotionSchemas");
+const { ActivityType, Client } = require("discord.js");
+const { Activity, Users } = require("../../mongoSchemas/users");
+const { Thought } = require("../../mongoSchemas/thoughtSchema");
+const { EmotionStatus } = require("../../mongoSchemas/emotionSchemas");
 const {
-  openai,
   MIN_EMOTION_VALUE,
   MAX_EMOTION_VALUE,
   MIN_SENTIMENT_VALUE,
   MAX_SENTIMENT_VALUE,
+  THOUGHT_RATE,
+  ACTIVITY_RATE,
+  EMOTIONAL_DECAY_RATE,
+} = require("../../constants/constants");
+const {
   getActivitySchema,
   getItemSchema,
   getReasonSchema,
@@ -17,11 +21,11 @@ const {
   getEmotionStatusSchema,
   getIdentitySchema,
   getIsActionSchema,
-} = require("../../constants/constants");
+} = require("../../constants/schemas");
 
-const {GrabSelf, GrabUser} = require("../../services/mongoService");
-const {DeepMerge, GetType} = require("../../utils/logicHelpers");
-const {GetStructuredInnerDialogueResponse} = require("../../services/aiService");
+const {GrabSelf} = require("../../services/mongoService");
+const {DeepMerge, GetType, MinutesToMilliseconds} = require("../../utils/logicHelpers");
+const {GetStructuredQueryResponse} = require("../../services/aiService");
 
 /**
  * @brief
@@ -137,7 +141,7 @@ module.exports = async (client) => {
 
         let innerDialogue = isActionQuery;
 
-        let isActionQueryResponse = await getStructuredQueryResponse(
+        let isActionQueryResponse = await GetStructuredQueryResponse(
           innerDialogue,
           getIsActionSchema()
         );
@@ -161,7 +165,7 @@ module.exports = async (client) => {
 
           innerDialogue.push(categoryQuery);
 
-          let categoryQueryResponse = await getStructuredQueryResponse(
+          let categoryQueryResponse = await GetStructuredQueryResponse(
             innerDialogue,
             getCategorySchema()
           );
@@ -180,7 +184,7 @@ module.exports = async (client) => {
             content: activityQuery,
           });
 
-          let activityQueryResponse = await getStructuredQueryResponse(
+          let activityQueryResponse = await GetStructuredQueryResponse(
             innerDialogue,
             getActivitySchema()
           );
@@ -205,7 +209,7 @@ module.exports = async (client) => {
             content: itemQuery,
           });
 
-          let itemQueryResponse = await getStructuredQueryResponse(
+          let itemQueryResponse = await GetStructuredQueryResponse(
             innerDialogue,
             getItemSchema()
           );
@@ -222,7 +226,7 @@ module.exports = async (client) => {
             content: reasonQuery,
           });
 
-          let reasonQueryResponse = await getStructuredQueryResponse(
+          let reasonQueryResponse = await GetStructuredQueryResponse(
             innerDialogue,
             getReasonSchema()
           );
@@ -234,7 +238,7 @@ module.exports = async (client) => {
             },
           ];
 
-          let emotionalImpactQueryResponse = await getStructuredQueryResponse(
+          let emotionalImpactQueryResponse = await GetStructuredQueryResponse(
             emotionalImpactQuery,
             getEmotionStatusSchema()
           );
@@ -300,7 +304,7 @@ module.exports = async (client) => {
       } catch (error) {
         console.log(`System Error: ${error.message}`);
       }
-      setTimeout(activityLoop, activityRate);
+      setTimeout(() => activityLoopLoop(activityRate), activityRate);
     };
 
     // EMOTIONAL DECAY //
@@ -312,15 +316,17 @@ module.exports = async (client) => {
           if (data.value > MIN_EMOTION_VALUE) {
             data.value -= 1;
             self.emotional_status.emotions[emotion].value = data.value;
+            if (self.emotional_status.emotions[emotion].value < 0){
+              self.emotional_status.emotions[emotion].value = 0;
+            }
             console.log(`Emotional decay: ${emotion} : ${data.value}`);
           }
         });
-
         await self.save();
       } catch (error) {
         console.log(`Error during emotional decay: ${error}`);
       }
-      setTimeout(emotionDecayLoop, decayRate);
+      setTimeout(() => emotionDecayLoop(decayRate), decayRate);
     };
 
     // THOUGHT LOOP //
@@ -362,7 +368,7 @@ module.exports = async (client) => {
         },
       ];
 
-      let isThinkingQueryResponse = await getStructuredQueryResponse(
+      let isThinkingQueryResponse = await GetStructuredQueryResponse(
         isThinkingQuery,
         getIsThinkingSchema()
       );
@@ -387,7 +393,7 @@ module.exports = async (client) => {
           },
         ];
 
-        let thoughtQueryResponse = await getStructuredQueryResponse(
+        let thoughtQueryResponse = await GetStructuredQueryResponse(
           thoughtQuery,
           getThoughtSchema()
         );
@@ -398,7 +404,7 @@ module.exports = async (client) => {
         };
         queries.push(emotionalReaction);
 
-        let emotionalAffectQueryResponse = await getStructuredQueryResponse(
+        let emotionalAffectQueryResponse = await GetStructuredQueryResponse(
           queries,
           getEmotionStatusSchema()
         );
@@ -415,7 +421,7 @@ module.exports = async (client) => {
 
         queries.push(identityQuery);
 
-        let identityAffectQueryResponse = await getStructuredQueryResponse(
+        let identityAffectQueryResponse = await GetStructuredQueryResponse(
           queries,
           getIdentitySchema()
         );
@@ -435,12 +441,12 @@ module.exports = async (client) => {
         thought.save();
       }
 
-      setTimeout(thinkingLoop, thoughtRate);
+      setTimeout(() => thoughtLoop(thoughtRate), thoughtRate);
     };
 
-    thinkingLoop(3600000); // 60 mins
-    emotionDecayLoop(120000); // 2 mins
-    activityLoop(1800000); // 30 mins
+    thinkingLoop(MinutesToMilliseconds(THOUGHT_RATE));
+    emotionDecayLoop(MinutesToMilliseconds(EMOTIONAL_DECAY_RATE));
+    activityLoop(MinutesToMilliseconds(ACTIVITY_RATE));
   } catch (error) {
     console.log(`System Error: ${error.message}`);
   }

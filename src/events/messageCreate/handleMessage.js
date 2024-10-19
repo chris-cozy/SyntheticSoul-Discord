@@ -1,9 +1,7 @@
-const { Configuration, OpenAIApi } = require("openai");
 const { Client, Message } = require("discord.js");
-const { Conversations, Messages } = require("../../schemas/conversationSchema");
-const { Users, Self } = require("../../schemas/users");
-const { EmotionStatus } = require("../../schemas/emotionSchemas");
-const { SentimentStatus } = require("../../schemas/sentimentSchemas");
+const {Messages } = require("../../mongoSchemas/conversationSchema");
+const { EmotionStatus } = require("../../mongoSchemas/emotionSchemas");
+const { SentimentStatus } = require("../../mongoSchemas/sentimentSchemas");
 const {
   openai,
   MIN_EMOTION_VALUE,
@@ -12,23 +10,23 @@ const {
   MAX_SENTIMENT_VALUE,
   CHOICE_RESPOND,
   CHOICE_IGNORE,
-  getEmotionStatusSchema,
+  MIN_PERSONALITY_VALUE,
+  MAX_PERSONALITY_VALUE,
+  EXTRINSIC_RELATIONSHIPS,
+  NO_INTRINSIC_RELATIONSHIP,
+} = require("../../constants/constants");
+const {getEmotionStatusSchema,
   getMessageSchema,
   getSummarySchema,
   getResponseChoiceSchema,
   getIdentitySchema,
   getSentimentStatusSchema,
   getPersonalityStatusSchema,
-  MIN_PERSONALITY_VALUE,
-  MAX_PERSONALITY_VALUE,
-  EXTRINSIC_RELATIONSHIPS,
-  getExtrinsicRelationshipSchema,
-  NO_INTRINSIC_RELATIONSHIP,
-} = require("../../constants/constants");
+  getExtrinsicRelationshipSchema} = require("../../constants/schemas");
 
-const {GrabSelf, GrabUser, GetConversationSnippet} = require("../../services/mongoService");
+const {GrabSelf, GrabUser, GetConversation} = require("../../services/mongoService");
 const {DeepMerge, AlterPersonality} = require("../../utils/logicHelpers");
-const {GetStructuredInnerDialogueResponse} = require("../../services/aiService");
+const {GetStructuredQueryResponse} = require("../../services/aiService");
 
 /**
  * @brief Handle a message sent in the server.
@@ -44,8 +42,9 @@ module.exports = async (client, msg) => {
   async function handleUserMessage() {
     let self = await GrabSelf(process.env.BOT_NAME);
     let user = await GrabUser(msg.author.id);
-
-    let userMessages = await GetConversationSnippet(user.user_id, spliceBound);
+    const spliceBound = 5;
+    let userConversation = await GetConversation(user.user_id);
+    let userMessages = userConversation.messages.slice(-spliceBound);
     let receiveDate = new Date();
 
     let ongoingConversationString =
@@ -91,8 +90,6 @@ module.exports = async (client, msg) => {
       self.emotional_status
     )}.`;
 
-    
-
     // MESSAGE ANALYSIS
     let initialEmotionQuery = {
       role: "user",
@@ -113,7 +110,7 @@ module.exports = async (client, msg) => {
 
     console.log("INITIAL EMOTIONAL RESPONSE");
     const initialEmotionQueryResponse =
-      await GetStructuredInnerDialogueResponse(
+      await GetStructuredQueryResponse(
         innerDialogue,
         getEmotionStatusSchema()
       );
@@ -142,7 +139,7 @@ module.exports = async (client, msg) => {
 
     console.log("MESSAGE RECEIVED INTERPRETATION");
     const messageReceivedQueryResponse =
-      await GetStructuredInnerDialogueResponse(
+      await GetStructuredQueryResponse(
         messageQueries,
         getMessageSchema()
       );
@@ -167,7 +164,7 @@ module.exports = async (client, msg) => {
 
     console.log("RESPONSE CHOICE");
     const responseChoiceQueryResponse =
-      await GetStructuredInnerDialogueResponse(
+      await GetStructuredQueryResponse(
         messageQueries,
         getResponseChoiceSchema()
       );
@@ -193,7 +190,7 @@ module.exports = async (client, msg) => {
       messageQueries.push(messageResponseQuery);
 
       console.log("MESSAGE RESPONSE");
-      messageResponseQueryResponse = await GetStructuredInnerDialogueResponse(
+      messageResponseQueryResponse = await GetStructuredQueryResponse(
         messageQueries,
         getMessageSchema()
       );
@@ -212,7 +209,7 @@ module.exports = async (client, msg) => {
 
       console.log("FINAL EMOTIONAL RESPONSE");
       const finalEmotionQueryResponse =
-        await GetStructuredInnerDialogueResponse(
+        await GetStructuredQueryResponse(
           innerDialogue,
           getEmotionStatusSchema()
         );
@@ -242,7 +239,7 @@ module.exports = async (client, msg) => {
 
       console.log("FINAL EMOTIONAL RESPONSE");
       const finalEmotionQueryResponse =
-        await GetStructuredInnerDialogueResponse(
+        await GetStructuredQueryResponse(
           innerDialogue,
           getEmotionStatusSchema()
         );
@@ -269,7 +266,7 @@ module.exports = async (client, msg) => {
     innerDialogue.push(sentimentQuery);
 
     console.log("SENTIMENT CHANGES");
-    const sentimentQueryResponse = await GetStructuredInnerDialogueResponse(
+    const sentimentQueryResponse = await GetStructuredQueryResponse(
       innerDialogue,
       getSentimentStatusSchema()
     );
@@ -295,7 +292,7 @@ module.exports = async (client, msg) => {
     innerDialogue.push(summaryQuery);
 
     console.log("SUMMARY CHANGES");
-    const summaryQueryResponse = await GetStructuredInnerDialogueResponse(
+    const summaryQueryResponse = await GetStructuredQueryResponse(
       innerDialogue,
       getSummarySchema()
     );
@@ -318,7 +315,7 @@ module.exports = async (client, msg) => {
 
     innerDialogue.push(extrinsicRelationshipQuery);
     console.log("EXTRINSIC CHANGES");
-    const extrinsicRelationshipQueryResponse = await GetStructuredInnerDialogueResponse(
+    const extrinsicRelationshipQueryResponse = await GetStructuredQueryResponse(
       innerDialogue,
       getExtrinsicRelationshipSchema()
     );
@@ -342,7 +339,7 @@ module.exports = async (client, msg) => {
     innerDialogue.push(identityQuery);
 
     console.log("IDENTITY CHANGES");
-    const identityQueryResponse = await GetStructuredInnerDialogueResponse(
+    const identityQueryResponse = await GetStructuredQueryResponse(
       innerDialogue,
       getIdentitySchema()
     );
