@@ -289,7 +289,7 @@ module.exports = async (client) => {
     };
 
     // EMOTIONAL DECAY //
-    const decayRate = 60000; //1 minute
+    const decayRate = 120000; //2 minutes
     const emotionDecay = async () => {
       try {
         self = await grabSelf(process.env.BOT_NAME);
