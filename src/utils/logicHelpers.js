@@ -1,4 +1,8 @@
+import { getPersonalityStatusSchema } from "../constants/constants";
+
 const { ActivityType, Client, User } = require("discord.js");
+const {GetStructuredInnerDialogueResponse} = require("../services/aiService");
+const {getPersonalityStatusSchema, MIN_PERSONALITY_VALUE, MAX_PERSONALITY_VALUE} = require("../constants/constants");
 
 
 /**
@@ -63,4 +67,41 @@ export const DeepMerge = (target, source, average = false) => {
     hours = hours % 12 || 12; // Convert to 12-hour format
   
     return `${formattedDate} ${hours}:${minutes}${ampm}`;
+  }
+
+
+   /**
+* @brief Alters the self's personality based on the user's sentiment status and their extrinsic relationship
+* @param {Self} self - The self
+* @param {User} user - The user
+* @param {String} extrinsicRelationshipString - A string describing the extrinisic relationship between self and user
+* @returns New personality object
+*/
+  export const AlterPersonality = async (self, user, extrinsicRelationshipString) => {
+    let personality = self.personality_matrix;
+    let sentiment = user.sentiment_status;
+
+    let alterQuery = [
+      {
+        role: "user",
+        content: `These are ${self.name}'s personality traits: ${JSON.stringify(
+          personality
+        )}. These are ${self.name}'s sentiments towards ${
+          user.name
+        }: ${sentiment}. ${extrinsicRelationshipString} How would these sentiments and extrinsic relationship alter ${
+          self.name
+        }'s personality when interacting with ${
+          user.name
+        }? Provide the new object (only the personality traits whose value properties have changed, whether increased or decreased). Scale: ${MIN_PERSONALITY_VALUE} (lowest intensity) to ${MAX_PERSONALITY_VALUE} (highest intensity)`,
+      },
+    ];
+
+    let alterQueryResponse = await GetStructuredInnerDialogueResponse(
+      alterQuery,
+      getPersonalityStatusSchema()
+    );
+
+    let alteredPersonality = DeepMerge(personality, alterQueryResponse);
+
+    return alteredPersonality;
   }

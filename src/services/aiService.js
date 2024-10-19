@@ -21,6 +21,12 @@ const {
   } = require("../constants/constants");
 
 
+  /**
+ * @brief Queries the openai api to receive a structure response.
+ * @param {Array} messages - The array of message objects to query
+ * @param {Object} schema - The schema object for structuring the result
+ * @returns The message as a parsed JSON object
+ */
 export const GetStructuredInnerDialogueResponse = async (messages, schema) => {
     try {
       const response = await openai.createChatCompletion({

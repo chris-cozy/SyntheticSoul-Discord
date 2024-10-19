@@ -27,7 +27,7 @@ const {
 } = require("../../constants/constants");
 
 const {GrabSelf, GrabUser} = require("../../services/mongoService");
-const {DeepMerge} = require("../../utils/logicHelpers");
+const {DeepMerge, AlterPersonality} = require("../../utils/logicHelpers");
 const {GetStructuredInnerDialogueResponse} = require("../../services/aiService");
 
 /**
@@ -51,9 +51,6 @@ module.exports = async (client, msg) => {
       })) || new Conversations({ user_id: user.user_id });
     const spliceBound = 5;
     let userMessages = userConversation.messages.slice(-spliceBound);
-
-    //console.log("USER MESSAGES");
-    //console.log(userMessages);
 
     let receiveDate = new Date();
 
@@ -405,34 +402,5 @@ module.exports = async (client, msg) => {
     await Promise.all([self.save(), user.save(), userConversation.save()]);
   }
 
-  async function AlterPersonality(self, user, extrinsicRelationship) {
-    let personality = self.personality_matrix;
-    let sentiment = user.sentiment_status;
-
-    let alterQuery = [
-      {
-        role: "user",
-        content: `These are ${self.name}'s personality traits: ${JSON.stringify(
-          personality
-        )}. These are ${self.name}'s sentiments towards ${
-          user.name
-        }: ${sentiment}. ${extrinsicRelationship} How would these sentiments and extrinsic relationship alter ${
-          self.name
-        }'s personality when interacting with ${
-          user.name
-        }? Provide the new object (only the personality traits whose value properties have changed, whether increased or decreased). Scale: ${MIN_PERSONALITY_VALUE} (lowest intensity) to ${MAX_PERSONALITY_VALUE} (highest intensity)`,
-      },
-    ];
-
-    let alterQueryResponse = await GetStructuredInnerDialogueResponse(
-      alterQuery,
-      getPersonalityStatusSchema()
-    );
-
-    let alteredPersonality = DeepMerge(personality, alterQueryResponse);
-
-    return alteredPersonality;
-  }
-  
   handleUserMessage();
 };
