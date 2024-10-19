@@ -1491,7 +1491,7 @@ const getIsActionSchema = () => ({
     schema: {
       type: "object",
       properties: {
-        is_action: {
+        perform_action: {
           description:
             "Whether or not they want to perform an action.",
           type: "string",
