@@ -3,6 +3,7 @@ const { Client, Interaction } = require("discord.js");
 const { Configuration, OpenAIApi } = require("openai");
 const { Users, Self } = require("../../schemas/users");
 const { FormatDate } = require("../../utils/logicHelpers");
+const {GrabSelf, GrabUser, GetConversationSnippet} = require("../../services/mongoService");
 
 module.exports = {
   name: "info",
@@ -12,34 +13,12 @@ module.exports = {
   deleted: false,
 
   /**
-   * @brief Send an embed with bot information
+   * @brief Send an embed with program information
    * @param {Client} client
    * @param {Interaction} interaction
    */
   callback: async (client, interaction) => {
-    //await interaction.deferReply();
-
-    const configuration = new Configuration({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
-    const openai = new OpenAIApi(configuration);
-
     let self = await GrabSelf(process.env.BOT_NAME);
-
-    async function GrabSelf(agentName) {
-      let self = await Self.findOne({ name: agentName });
-
-      if (!self) {
-        self = new Self({
-          name: process.env.BOT_NAME,
-          personality_matrix: JSON.parse(process.env.BOT_PERSONALITY_MATRIX),
-        });
-
-        await self.save();
-        self = await Self.findOne({ name: agentName });
-      }
-      return self;
-    }
 
     try {
       const embed = new EmbedBuilder()
@@ -59,7 +38,7 @@ module.exports = {
 
       interaction.reply({ embeds: [embed] });
     } catch (error) {
-      console.log(`there was an error: ${error}`);
+      console.log(`Error - ${error.message}`);
     }
   },
 };

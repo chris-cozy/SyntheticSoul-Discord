@@ -1,6 +1,7 @@
 const { EmbedBuilder } = require("discord.js");
 const { Client, Interaction } = require("discord.js");
 const { Users, Self } = require("../../schemas/users");
+const {GrabSelf, GrabUser, GetConversationSnippet} = require("../../services/mongoService");
 
 module.exports = {
   name: "self",
@@ -10,40 +11,12 @@ module.exports = {
   deleted: false,
 
   /**
-   * @brief Send an embed with bot emotiong information
+   * @brief Send an embed with program's perception of you
    * @param {Client} client
    * @param {Interaction} interaction
    */
   callback: async (client, interaction) => {
     let user = await GrabUser(interaction.user.id);
-
-    async function GrabUser(authorId) {
-        let user = await Users.findOne({ discord_id: authorId });
-    
-        let intrinsicRelationship;
-    
-        switch (authorId){
-          case process.env.DEVELOPER_ID:
-            intrinsicRelationship = 'creator and master';
-            break;
-          default:
-            intrinsicRelationship = NO_INTRINSIC_RELATIONSHIP;
-            break;
-        }
-    
-        if (!user) {
-          user = new Users({
-            name: msg.author.username,
-            discord_id: msg.author.id,
-            intrinsic_relationship: intrinsicRelationship,
-          });
-          await user.save();
-          user = await Users.findOne({ discord_id: authorId });
-        }
-    
-        return user;
-      }
-
     let embed;
 
     try {
@@ -66,7 +39,7 @@ module.exports = {
 
     } catch (error) {
       interaction.reply({ embeds: [embed] });
-      console.log(`Error - ${error}`);
+      console.log(`Error - ${error.message}`);
     }
   },
 };
