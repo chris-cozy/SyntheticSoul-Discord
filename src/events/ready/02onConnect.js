@@ -133,7 +133,7 @@ module.exports = async (client) => {
               self.latest_thought
             )}. These are the items in their room they can perform actions on: ${
               JSON.stringify(room.items)
-            }. Do they want to perform an action right now? Provide the answer (yes or no) in a JSON object with a property named perform_action.`,
+            }. They can perform an action or do nothing. Do they want to perform an action right now? Provide the answer (yes or no) in a JSON object with a property named perform_action.`,
           },
         ];
 
