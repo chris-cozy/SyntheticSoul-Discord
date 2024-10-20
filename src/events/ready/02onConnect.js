@@ -125,16 +125,14 @@ module.exports = async (client) => {
           self.personality_matrix.toObject()
         )}. This is ${self.name}'s emotional status: ${JSON.stringify(
           self.emotional_status.toObject()
-        )}.`;
+        )}. This is their identity: ${self.identity}`;
         let isActionQuery = [
           {
             role: "user",
-            content: `This is the current time: ${today}. ${selfContext} These are the past ${limit} actions they have done today: ${JSON.stringify(
-              todaysActivities
-            )}. This is their latest thought: ${JSON.stringify(
+            content: `This is the current time: ${today}. ${selfContext} This is their latest thought: ${JSON.stringify(
               self.latest_thought
-            )}. These are the items in their room: ${
-              room.items
+            )}. These are the items in their room they can perform actions on: ${
+              JSON.stringify(room.items)
             }. Do they want to perform an action right now? Provide the answer (yes or no) in a JSON object with a property named perform_action.`,
           },
         ];
@@ -160,7 +158,7 @@ module.exports = async (client) => {
         if (isActionQueryResponse.perform_action == "yes") {
           let categoryQuery = {
             role: "user",
-            content: `What category of activity does ${self.name} want to do? Provide the name of the category, either watching, playing, listening, or custom. Respond with a JSON object with the property category.`,
+            content: `What category of activity does ${self.name} want to do? Provide the name of the category, either watching, playing, listening, or custom (other). Respond with a JSON object with the property category.`,
           };
 
           innerDialogue.push(categoryQuery);
