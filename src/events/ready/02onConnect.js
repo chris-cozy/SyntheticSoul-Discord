@@ -304,7 +304,7 @@ module.exports = async (client) => {
       } catch (error) {
         console.log(`System Error: ${error.message}`);
       }
-      setTimeout(() => activityLoopLoop(activityRate), activityRate);
+      setTimeout(() => activityLoop(activityRate), activityRate);
     };
 
     // EMOTIONAL DECAY //
