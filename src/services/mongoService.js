@@ -1,5 +1,8 @@
 const { Users, Self } = require("../mongoSchemas/users");
 const { Conversations } = require("../mongoSchemas/conversationSchema");
+const {
+  NO_INTRINSIC_RELATIONSHIP,
+} = require("../constants/constants");
 
 
 /**
