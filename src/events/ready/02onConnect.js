@@ -168,6 +168,10 @@ module.exports = async (client) => {
             getCategorySchema()
           );
 
+          let activityType = GetType(categoryQueryResponse.category);
+          console.log("Activity category: " + categoryQueryResponse.category);
+          console.log("Activity Type: " + activityType);
+
           const activityQueries = {
             listening: `Provide the name of a song ${self.name} is interested in listening to, and the length of time they will, in milliseconds. Respond with a JSON object with the properties activity and duration.`,
             playing: `Provide the name of a video game ${self.name} is interested in playing, and the length of time they will, in milliseconds. Respond with a JSON object with the properties activity and duration.`,
@@ -192,7 +196,7 @@ module.exports = async (client) => {
             content: `${JSON.stringify(activityQueryResponse)}`,
           });
 
-          let activityType = GetType(isActionQueryResponse.category);
+       
 
           let itemQuery = `Which item in ${
             self.name
