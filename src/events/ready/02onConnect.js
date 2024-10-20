@@ -441,7 +441,7 @@ module.exports = async (client) => {
         thought.save();
       }
 
-      setTimeout(() => thoughtLoop(thoughtRate), thoughtRate);
+      setTimeout(() => thinkingLoop(thoughtRate), thoughtRate);
     };
 
     thinkingLoop(MinutesToMilliseconds(THOUGHT_RATE));
