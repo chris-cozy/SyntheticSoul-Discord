@@ -28,7 +28,6 @@ async function GetStructuredQueryResponse(messages, schema){
 
       return parsed;
     } catch (error) {
-      msg.reply({content: `System Error: ${error.message}`, ephemeral: true});
       console.log(`System Error: ${error.message}`);
       return null;
     }
