@@ -22,6 +22,7 @@ const client = new Client({
     IntentsBitField.Flags.MessageContent,
     // Needed for canvacord status
     IntentsBitField.Flags.GuildPresences,
+    IntentsBitField.Flags.GuildVoiceStates
   ],
 });
 
