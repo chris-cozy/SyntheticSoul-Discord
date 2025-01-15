@@ -33,6 +33,7 @@ const {GetStructuredQueryResponse} = require("../../services/aiService");
  */
 module.exports = async (client) => {
   try {
+    /*
     class Item {
       constructor(name, categories, description = "") {
         this.name = name; // e.g., "Computer", "TV"
@@ -308,6 +309,7 @@ module.exports = async (client) => {
       }
       setTimeout(() => activityLoop(activityRate), activityRate);
     };
+    */
 
     // EMOTIONAL DECAY //
     const emotionDecayLoop = async (decayRate) => {
@@ -448,7 +450,7 @@ module.exports = async (client) => {
 
     thinkingLoop(MinutesToMilliseconds(THOUGHT_RATE));
     emotionDecayLoop(MinutesToMilliseconds(EMOTIONAL_DECAY_RATE));
-    activityLoop(MinutesToMilliseconds(ACTIVITY_RATE));
+    //activityLoop(MinutesToMilliseconds(ACTIVITY_RATE));
   } catch (error) {
     console.log(`System Error: ${error.message}`);
   }
