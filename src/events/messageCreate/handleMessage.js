@@ -12,30 +12,21 @@ const audioQueue = [];
 let isPlaying = false;
 let leaveTimeout;
 
-
 /**
  * Update and send the rolling list of messages.
  * @param {Object} client - The client object.
  * @param {Object} msg - The latest message object.
  */
-async function updateAndSendRecentMessages(client, msg) {
-  const recentMessages = [];
-  const messages = await msg.channel.messages.fetch({ limit: 10 });
-  const sortedMessages = Array.from(messages.values()).reverse();
-            
-  // Loop through and log the messages
-  sortedMessages.forEach(msg => {
-    const fromBot = msg.author.id === client.user.id;
-    recentMessages.push({
-      "message": msg.content,
-      "sender": fromBot ? process.env.BOT_NAME : msg.author.username,
-      "timestamp": msg.createdAt
-    });
-  });
+async function updateAndSendRecentMessages(msg) {
 
   const url = process.env.SYNTHETIC_SOUL_API_IMPLICIT_ADDRESSING_URL;
-  const payload = { "message_list": recentMessages };
-  const headers = { 'Content-Type': 'application/json' };
+  const payload = {
+      message: msg.content,
+      username: msg.author.username
+  };
+  const headers = {
+      'Content-Type': 'application/json',
+  };
 
   console.log(payload)
   try {
@@ -48,9 +39,9 @@ async function updateAndSendRecentMessages(client, msg) {
 }
 
 /**
-   * @brief Passes message to synthetic soul api. Checks if user is in a voice channel and if so, joins and speaks the response
-   */
-async function handleUserMessage(msg) {
+ * @brief Passes message to synthetic soul api. Checks if user is in a voice channel and if so, joins and speaks the response
+ */
+async function handleUserMessage(client, msg) {
   const elevenLabsClient = new ElevenLabsClient({ apiKey: process.env.ELEVENLABS_KEY });
 
   const url = process.env.SYNTHETIC_SOUL_API_URL;
@@ -86,7 +77,7 @@ async function handleUserMessage(msg) {
       await handleTTSResponse(tts, filePath);
 
       audioQueue.push({ filePath, voiceChannel });
-      if (!isPlaying) playNextAudio();      
+      if (!isPlaying) playNextAudio(client, msg);      
     }
     
   } catch (error) {
@@ -103,10 +94,29 @@ async function handleUserMessage(msg) {
 /**
  * @brief Joins voice channel user is in and plays audio response file. If there are numerous, recursively calls. Stays in call for 30 seconds before leaving
  */
-async function playNextAudio() {
-  // TODO: Make bot stay in call for as long as the message sender is in the call
+async function playNextAudio(client, msg) {
+
+  let lastVoiceChannel = null;
+  const lastMessageSenderId = msg.author.id;
   if (audioQueue.length === 0) {
     isPlaying = false;
+
+    // If the bot is still connected, check the presence of the last message sender
+    const voiceChannel = lastVoiceChannel;
+    if (!voiceChannel) return;
+
+    if (!lastMessageSenderId) return;
+
+    const members = voiceChannel.members;
+    const lastSender = members.get(lastMessageSenderId);
+
+    if (!lastSender) {
+      leaveTimeout = setTimeout(() => {
+        if (voiceChannel.members.filter(member => !(member.user.id === client.user.id)).size === 0) {
+          connection.destroy();
+        }
+      }, 15000); // 15 seconds timeout
+    } 
     return;
   }
 
@@ -119,6 +129,8 @@ async function playNextAudio() {
     selfDeaf: false,
   });
 
+  lastVoiceChannel = voiceChannel;
+
   const player = createAudioPlayer();
   const resource = createAudioResource(filePath);
 
@@ -128,11 +140,7 @@ async function playNextAudio() {
   player.on(AudioPlayerStatus.Idle, () => {
     fs.unlinkSync(filePath); // Delete the file after playback
     console.log(`${filePath} deleted`);
-    clearTimeout(leaveTimeout);
-    leaveTimeout = setTimeout(() => {
-      if (connection.state.status !== 'destroyed') connection.destroy();
-    }, 30000); // 30 seconds timeout to leave the channel
-    playNextAudio();
+    playNextAudio(client, msg);
   });
 
   player.on('error', (error) => {
@@ -178,10 +186,10 @@ module.exports = async (client, msg) => {
     return;
   }
 
-  implicitly_addressed = await updateAndSendRecentMessages(client, msg);
+  implicitly_addressed = await updateAndSendRecentMessages(msg);
 
   if((implicitly_addressed != null) && implicitly_addressed["implicitly_addressed"] == "yes"){
-    handleUserMessage(msg);
+    handleUserMessage(client, msg);
   } 
 
 };
