@@ -1,6 +1,5 @@
 const { EmbedBuilder } = require("discord.js");
 const { Client, Interaction } = require("discord.js");
-const {GrabSelf} = require("../../services/mongoService");
 
 module.exports = {
   name: "emotion",
@@ -32,7 +31,8 @@ module.exports = {
           iconURL: `${interaction.user.displayAvatarURL()}`,
         });
         
-      const emotions = self.emotional_status.emotions.toObject();
+      /*
+      const emotions = // call api endpoint to get emotions
       for (const emotion in emotions) {
         // Skip the _id field, as it's not an emotion
         if (emotion === "_id") continue;
@@ -41,6 +41,7 @@ module.exports = {
         console.log(`${emotion}: ${value}`);
         embed.addFields({ name: `${emotion}`, value: value.toString(), inline: true });
       }
+        */
       interaction.reply({ embeds: [embed] });
 
     } catch (error) {
