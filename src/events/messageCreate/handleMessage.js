@@ -21,6 +21,9 @@ module.exports = async (client, msg) => {
     return;
   }
 
+  /**
+   * @brief Passes message to synthetic soul api. Checks if user is in a voice channel and if so, joins and speaks the response
+   */
   async function handleUserMessage() {
     const elevenLabsClient = new ElevenLabsClient({ apiKey: process.env.ELEVENLABS_KEY });
 
@@ -71,7 +74,11 @@ module.exports = async (client, msg) => {
     
   }
 
+  /**
+   * @brief Joins voice channel user is in and plays audio response file. If there are numerous, recursively calls. Stays in call for 30 seconds before leaving
+   */
   async function playNextAudio() {
+    // TODO: Make bot stay in call for as long as the message sender is in the call
     if (audioQueue.length === 0) {
       isPlaying = false;
       return;
@@ -109,6 +116,9 @@ module.exports = async (client, msg) => {
     });
   }
 
+  /**
+   * @brief Writes the audio output file
+   */
   async function handleTTSResponse(wrapper, filePath) {
     const reader = wrapper.reader;
   
