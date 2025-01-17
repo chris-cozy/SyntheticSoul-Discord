@@ -18,6 +18,6 @@ module.exports = {
         const reply = await interaction.fetchReply();
 
         const ping = reply.createdTimestamp - interaction.createdTimestamp;
-        interaction.editReply(`pong! my personal ping is ${ping}ms, and the websocket ping is ${client.ws.ping}ms`);
+        interaction.editReply(`Personal ping: ${ping}ms, Websocket ping: ${client.ws.ping}ms`);
     },
 }

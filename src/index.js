@@ -22,16 +22,13 @@ const client = new Client({
     IntentsBitField.Flags.MessageContent,
     // Needed for canvacord status
     IntentsBitField.Flags.GuildPresences,
+    IntentsBitField.Flags.GuildVoiceStates
   ],
 });
 
 // Immediately invoked function, made async to wait for database connection
 (async () => {
   try {
-    mongoose.set("strictQuery", false);
-    await mongoose.connect(process.env.MONGO_CONNECTION, { keepAlive: true });
-    console.log(`Connected to the database.`);
-
     eventHandler(client);
     client.login(process.env.TOKEN);
   } catch (error) {

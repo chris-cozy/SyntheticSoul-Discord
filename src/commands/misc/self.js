@@ -1,6 +1,5 @@
 const { EmbedBuilder } = require("discord.js");
 const { Client, Interaction } = require("discord.js");
-const {GrabUser} = require("../../services/mongoService");
 
 module.exports = {
   name: "self",
@@ -15,12 +14,9 @@ module.exports = {
    * @param {Interaction} interaction
    */
   callback: async (client, interaction) => {
-    let user = await GrabUser(interaction.user.id);
-    let embed;
-
     try {
         
-      embed = new EmbedBuilder()
+      const embed = new EmbedBuilder()
         .setTitle(`${client.user.username}'s perception of ${interaction.user.username}`)
         .setColor("Random")
         .setURL("https://github.com/chris-cozy/SyntheticSoul-Discord")
@@ -31,9 +27,12 @@ module.exports = {
           iconURL: `${interaction.user.displayAvatarURL()}`,
         });
         
+        // TODO: Call endpoint to get perception information
+        /*
         embed.addFields({ name: `Intrinsic Relationship`, value: user.intrinsic_relationship, inline: false });
         embed.addFields({ name: `Extrinsic Relationship`, value: user.extrinsic_relationship, inline: false });
         embed.addFields({ name: `Summary`, value: user.summary, inline: false });
+        */
       interaction.reply({ embeds: [embed] });
 
     } catch (error) {

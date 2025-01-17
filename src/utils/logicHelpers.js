@@ -1,32 +1,5 @@
-const { ActivityType, Client, User } = require("discord.js");
-const { GetStructuredQueryResponse } = require("../services/aiService");
-const {
-  MIN_PERSONALITY_VALUE,
-  MAX_PERSONALITY_VALUE,
-} = require("../constants/constants");
-const { getPersonalityStatusSchema } = require("../constants/schemas");
+const { ActivityType } = require("discord.js");
 
-/**
- * @brief Merges the property values of the source object into the property values of the target object
- * @param {Boolean} average - Whether or not to average the values when merging, providing a smoother transition
- * @param {Object} target - Target object
- * @param {Object} source - Source object
- * @returns Target object with the new property values
- */
-function DeepMerge(target, source, average = false) {
-  for (const key in source) {
-    if (source[key] instanceof Object && key in target) {
-      target[key] = DeepMerge(target[key], source[key], average);
-    } else {
-      if (average) {
-        target[key] = (target[key] + source[key]) / 2;
-      } else {
-        target[key] = source[key];
-      }
-    }
-  }
-  return target;
-}
 
 /**
  * @brief Grabs the desired activity type
@@ -67,50 +40,12 @@ function FormatDate(date) {
   return `${formattedDate} ${hours}:${minutes}${ampm}`;
 }
 
-/**
- * @brief Alters the self's personality based on the user's sentiment status and their extrinsic relationship
- * @param {Self} self - The self
- * @param {User} user - The user
- * @param {String} extrinsicRelationshipString - A string describing the extrinisic relationship between self and user
- * @returns New personality object
- */
-async function AlterPersonality(self, user, extrinsicRelationshipString) {
-  let personality = self.personality_matrix;
-  let sentiment = user.sentiment_status;
-
-  let alterQuery = [
-    {
-      role: "user",
-      content: `These are ${self.name}'s personality traits: ${JSON.stringify(
-        personality
-      )}. These are ${self.name}'s sentiments towards ${
-        user.name
-      }: ${sentiment}. ${extrinsicRelationshipString} How would these sentiments and extrinsic relationship alter ${
-        self.name
-      }'s personality when interacting with ${
-        user.name
-      }? Provide the new object (only the personality traits whose value properties have changed, whether increased or decreased). Scale: ${MIN_PERSONALITY_VALUE} (lowest intensity) to ${MAX_PERSONALITY_VALUE} (highest intensity)`,
-    },
-  ];
-
-  let alterQueryResponse = await GetStructuredQueryResponse(
-    alterQuery,
-    getPersonalityStatusSchema()
-  );
-
-  let alteredPersonality = DeepMerge(personality, alterQueryResponse);
-
-  return alteredPersonality;
-}
-
 function MinutesToMilliseconds(minutes) {
   return minutes * 60 * 1000;
 }
 
 module.exports = {
-  AlterPersonality,
   FormatDate,
   GetType,
-  DeepMerge,
   MinutesToMilliseconds,
 };

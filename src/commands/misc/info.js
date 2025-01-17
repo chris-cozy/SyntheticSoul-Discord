@@ -1,7 +1,6 @@
 const { EmbedBuilder } = require("discord.js");
 const { Client, Interaction } = require("discord.js");
 const { FormatDate } = require("../../utils/logicHelpers");
-const {GrabSelf} = require("../../services/mongoService");
 
 module.exports = {
   name: "info",
@@ -16,8 +15,6 @@ module.exports = {
    * @param {Interaction} interaction
    */
   callback: async (client, interaction) => {
-    let self = await GrabSelf(process.env.BOT_NAME);
-
     try {
       const embed = new EmbedBuilder()
         .setTitle(client.user.username)
@@ -31,8 +28,11 @@ module.exports = {
           iconURL: `${interaction.user.displayAvatarURL()}`,
         });
 
+        // Call endpoint to get agent information
+        /*
         embed.addFields({name: 'Self Identity', value: `${self.identity}`, inline: false});
       embed.addFields({name: `Latest Thought: ${FormatDate(self.latest_thought.timestamp)}`, value: `${self.latest_thought.thought}`, inline: false});
+      */
 
       interaction.reply({ embeds: [embed] });
     } catch (error) {

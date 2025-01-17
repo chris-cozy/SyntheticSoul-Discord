@@ -1,6 +1,5 @@
 const { EmbedBuilder } = require("discord.js");
 const { Client, Interaction } = require("discord.js");
-const {GrabUser} = require("../../services/mongoService");
 
 module.exports = {
   name: "sentiment",
@@ -15,13 +14,9 @@ module.exports = {
    * @param {Interaction} interaction
    */
   callback: async (client, interaction) => {
-    let user = await GrabUser(interaction.user.id);
-
-    let embed;
-
     try {
         
-      embed = new EmbedBuilder()
+      const embed = new EmbedBuilder()
         .setTitle(`${client.user.username}'s sentiment towards ${interaction.user.username}`)
         .setColor("Random")
         .setURL("https://github.com/chris-cozy/SyntheticSoul-Discord")
@@ -32,6 +27,8 @@ module.exports = {
           iconURL: `${interaction.user.displayAvatarURL()}`,
         });
         
+        // TODO: Call Endpoint to get sentiment information
+        /*
         const sentiments = user.sentiment_status.sentiments.toObject();
       for (const sentiment in sentiments) {
         // Skip the _id field, as it's not an emotion
@@ -41,6 +38,7 @@ module.exports = {
         console.log(`${sentiment}: ${value}`);
         embed.addFields({ name: `${sentiment}`, value: value.toString(), inline: true });
       }
+        */
       interaction.reply({ embeds: [embed] });
 
     } catch (error) {
