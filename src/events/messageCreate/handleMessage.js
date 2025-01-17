@@ -1,4 +1,4 @@
-const { Client, Message, GatewayIntentBits } = require("discord.js");
+const { Client, Message } = require("discord.js");
 const axios = require('axios');
 const {ElevenLabsClient} = require('elevenlabs');
 const fs = require('fs');
