@@ -53,24 +53,36 @@ function MinutesToMilliseconds(minutes) {
  * @brief Causes bot to leave all unspecified guilds
  * @param {Client} client - The bot client
  */
-async function LeaveUnregisteredGuilds(client){
+async function LeaveUnregisteredGuilds(client) {
   try {
     const guilds = await client.guilds.fetch();
 
-    guilds.forEach(async (guild) => {
-        if (guild.id !== process.env.GUILD_ID) {
-            try {
-                guild.leave()
-                .then(guild => console.log(`Success - LeaveUnregisteredGuilds: Leaving guild: ${guild.name} (${guild.id})`))
-            } catch (error) {
-                console.error(`Error - LeaveUnregisteredGuilds: While leaving guild ${guild.name} (${guild.id}):`, error);
-            }
-        } else {
-            console.log(`Success - LeaveUnregisteredGuilds: Exempt guild: ${guild.name} (${guild.id})`);
+    guilds.forEach(async (partialGuild) => {
+      try {
+        // Fetch the full Guild object
+        const guild = await client.guilds.resolve(partialGuild.id);
+        
+        if (!guild) {
+          console.error(`Error - LeaveUnregisteredGuilds: Could not resolve guild with ID ${partialGuild.id}`);
+          return;
         }
+
+        if (guild.id !== process.env.GUILD_ID) {
+          try {
+            await guild.leave();
+            console.log(`Success - LeaveUnregisteredGuilds: Leaving guild: ${guild.name} (${guild.id})`);
+          } catch (error) {
+            console.error(`Error - LeaveUnregisteredGuilds: While leaving guild ${guild.name} (${guild.id}):`, error);
+          }
+        } else {
+          console.log(`Success - LeaveUnregisteredGuilds: Exempt guild: ${guild.name} (${guild.id})`);
+        }
+      } catch (error) {
+        console.error(`Error - LeaveUnregisteredGuilds: While fetching guild with ID ${partialGuild.id}:`, error);
+      }
     });
   } catch (error) {
-      console.error('Error - LeaveUnregisteredGuilds: While fetching guilds:', error);
+    console.error('Error - LeaveUnregisteredGuilds: While fetching guilds:', error);
   }
 }
 
