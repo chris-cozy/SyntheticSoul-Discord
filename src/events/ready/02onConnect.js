@@ -1,4 +1,5 @@
 const { Client } = require("discord.js");
+const { ClearTemporaryAudioFiles } = require("../../utils/voiceService");
 
 /**
  * @brief
@@ -6,6 +7,7 @@ const { Client } = require("discord.js");
  */
 module.exports = async (client) => {
   try {
+    ClearTemporaryAudioFiles();
     console.log(`${client.user.tag} is online.`);
   } catch (error) {
     console.log(`System Error: ${error.message}`);
