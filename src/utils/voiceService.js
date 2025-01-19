@@ -207,7 +207,7 @@ async function HandleVoiceCallInput(connection, client, voiceChannel) {
       // Wait until the Opus stream has ended
       while (!opusStreamState[userId]) {
         console.log(`Waiting for opus stream...`);
-        await new Promise((resolve) => setTimeout(resolve, 500)); // Small delay to avoid busy-wait
+        await new Promise((resolve) => setTimeout(resolve, 1000)); // Small delay to avoid busy-wait
       }
 
       const baseFilePath = path.join(audioDirectory, baseFile);
@@ -224,19 +224,16 @@ async function HandleVoiceCallInput(connection, client, voiceChannel) {
                 } else {
                     console.log('Success - HandleVoiceCallInput: MP3 file generated at:', file);
 
-                    // Delete pcm
-                    fs.unlinkSync(pcmPath);
+                    
 
                     activeSessions.delete(userId);
 
                     const user = client.users.cache.get(userId)
                     const spokenMessage = await TranscribeAudio(mp3Path);
 
-                    // Delete mp3 file
-                    fs.unlinkSync(mp3Path);
-                    
-                    // Handle call response
                     HandleCallResponse(spokenMessage, user.username, voiceChannel, client);
+                    fs.unlinkSync(pcmPath);
+                    fs.unlinkSync(mp3Path);
                 }
               });
           }).catch((err) => console.error('FFmpeg process failed:', err));
@@ -279,7 +276,7 @@ function CreateListeningStream(receiver, userId, filename) {
     const opusStream = receiver.subscribe(userId, {
       end: {
           behavior: EndBehaviorType.AfterSilence,
-          duration: 5000,
+          duration: 2500,
       },
     });
 
