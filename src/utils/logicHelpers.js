@@ -60,8 +60,8 @@ async function LeaveUnregisteredGuilds(client){
     guilds.forEach(async (guild) => {
         if (guild.id !== process.env.GUILD_ID) {
             try {
-                console.log(`Success - LeaveUnregisteredGuilds: Leaving guild: ${guild.name} (${guild.id})`);
-                await guild.leave();
+                guild.leave()
+                .then(guild => console.log(`Success - LeaveUnregisteredGuilds: Leaving guild: ${guild.name} (${guild.id})`))
             } catch (error) {
                 console.error(`Error - LeaveUnregisteredGuilds: While leaving guild ${guild.name} (${guild.id}):`, error);
             }
