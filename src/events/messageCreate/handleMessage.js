@@ -12,20 +12,19 @@ const { CheckImplicitAddressing, GetResponse } = require("../../utils/syntheticS
 module.exports = async (client, msg) => {
 
   if (msg.author.id === client.user.id) return;
+  const username = msg.author.username;
 
-  if(!(await CheckImplicitAddressing(msg))) return;
+  if(!(await CheckImplicitAddressing(msg.content, username))) return;
     
-  const response =  await GetResponse(msg);
-
-  console.log(typeof(response))
+  const response =  await GetResponse(msg.content, username);
 
   const voiceChannel = msg.member?.voice.channel;
 
   if (voiceChannel){
     const filePath = await HandleTTSResponse(response)
 
-    PushToAudioQueue(filePath, voiceChannel, msg);
-    PlayNextAudio(client, msg.author.id)
+    PushToAudioQueue(filePath, voiceChannel, username);
+    PlayNextAudio(client, username)
     
     return;  
   }

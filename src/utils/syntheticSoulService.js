@@ -7,12 +7,12 @@ dotenv.config();
  * @param {Object} msg - The latest message object.
  * @returns {Boolean} Whether the agent was implicitly addressed
  */
-async function CheckImplicitAddressing(msg) {
+async function CheckImplicitAddressing(message, username) {
 
   const url = process.env.SYNTHETIC_SOUL_API_IMPLICIT_ADDRESSING_URL;
   const payload = {
-      message: msg.content,
-      username: msg.author.username
+      message: message,
+      username: username
   };
   const headers = {
       'Content-Type': 'application/json',
@@ -38,11 +38,11 @@ async function CheckImplicitAddressing(msg) {
  * @param {Object} msg - The latest message object.
  * @returns {String} Response to the message
  */
-async function GetResponse(msg) {
+async function GetResponse(message, username) {
     const url = process.env.SYNTHETIC_SOUL_API_URL;
     const payload = {
-        message: msg.content,
-        username: msg.author.username
+        message: message,
+        username: username
     };
     const headers = {
         'Content-Type': 'application/json',
