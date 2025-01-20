@@ -2,7 +2,7 @@ const dotenv = require("dotenv");
 const {ElevenLabsClient} = require('elevenlabs');
 const fs = require('fs');
 const path = require('path');
-const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, EndBehaviorType, entersState, VoiceConnectionStatus, StreamType  } = require('@discordjs/voice');
+const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, EndBehaviorType, entersState, VoiceConnectionStatus, getVoiceConnection  } = require('@discordjs/voice');
 //const ffmpeg = require('ffmpeg-static');
 const ffmpeg = require('ffmpeg');
 const prism = require('prism-media');
@@ -22,6 +22,7 @@ const audioQueue = [];
 let isPlaying = false;
 const activeSessions = new Map();
 const opusStreamState = {};
+const processingFiles = new Set(); // Track ongoing MP3 conversions
 
 dotenv.config();
 
@@ -142,7 +143,13 @@ async function PlayNextAudio(client, username) {
     connection.subscribe(player);
 
     player.on(AudioPlayerStatus.Idle, () => {
-      fs.unlinkSync(filePath);
+      setTimeout(() => {
+        try {
+            fs.unlinkSync(filePath);
+        } catch (err) {
+            console.error('Error deleting file:', err);
+        }
+      }, 100); // Allow time for processes to release the file
       isPlaying = false;
       PlayNextAudio(client, author_username);
     });
@@ -206,19 +213,26 @@ async function HandleVoiceCallInput(connection, client, voiceChannel) {
 
       // Wait until the Opus stream has ended
       while (!opusStreamState[userId]) {
-        console.log(`Waiting for opus stream...`);
-        await new Promise((resolve) => setTimeout(resolve, 1000)); // Small delay to avoid busy-wait
+        await new Promise((resolve) => setTimeout(resolve, 500)); // Small delay to avoid busy-wait
       }
 
       const baseFilePath = path.join(audioDirectory, baseFile);
       const pcmPath = `${baseFilePath}.pcm`;
       const mp3Path = `${baseFilePath}.mp3`;
 
+    
+
       if (fs.existsSync(pcmPath)) {
         try{
+          if (processingFiles.has(pcmPath)) {
+            console.warn(`Warning - HandleVoiceCallInput: Skipping duplicate processing for file: ${mp3Path}`);
+            return;
+          }
+          processingFiles.add(pcmPath);
           const process = new ffmpeg(pcmPath);
           process.then(function (audio) {
               audio.fnExtractSoundToMP3(mp3Path, async function (error, file) {
+                
                 if (error) {
                     console.error('Error - HandleVoiceCallInput: during MP3 conversion:', error);
                 } else {
@@ -232,29 +246,17 @@ async function HandleVoiceCallInput(connection, client, voiceChannel) {
                     const spokenMessage = await TranscribeAudio(mp3Path);
 
                     HandleCallResponse(spokenMessage, user.username, voiceChannel, client);
-                    fs.unlinkSync(pcmPath);
-                    fs.unlinkSync(mp3Path);
+                    processingFiles.delete(pcmPath);
                 }
               });
-          }).catch((err) => console.error('FFmpeg process failed:', err));
-        } catch (err){
-          console.error(`Error - HandleVoiceCallInput: converting PCM to MP3: ${err.message}`);
-        }
-        /*
-        const command = `${ffmpeg} -y -f s16le -ar 48000 -ac 2 -i ${pcmPath} -c:a libmp3lame ${mp3Path}`;
-          exec(command, (error, stdout, stderr) => {
-              if (error) {
-                  console.error('Error during MP3 conversion:', error.message);
-                  return;
-              }
-              console.log('MP3 file generated successfully:', mp3Path);
-              console.log('stdout:', stdout);
-              console.log('stderr:', stderr);
+          }).catch((err) => {
+            processingFiles.delete(pcmPath);
+            console.error('Error - HandleVoiceCallInput: FFmpeg process failed:', err)
           });
-          */
-      
-        
-      
+        } catch (err){
+          processingFiles.delete(pcmPath);
+          console.error(`Error - HandleVoiceCallInput: converting PCM to MP3: ${err.message}`);
+        }     
       } else {
         console.error(`Error - HandleVoiceCallInput: PCM file not found at ${pcmPath}`);
       }
@@ -271,12 +273,13 @@ async function HandleVoiceCallInput(connection, client, voiceChannel) {
 function CreateListeningStream(receiver, userId, filename) {
   const pcm_file = `${filename}.pcm`
   const pcm_filePath = path.join(audioDirectory, pcm_file);
+  const silenceTrigger = 4000
 
   try{
     const opusStream = receiver.subscribe(userId, {
       end: {
           behavior: EndBehaviorType.AfterSilence,
-          duration: 2500,
+          duration: silenceTrigger,
       },
     });
 
@@ -376,6 +379,19 @@ async function HandleCallResponse(message, username, voiceChannel, client){
 }
 
 
+function GetClientVoiceData(client) {
+  for (const guild of client.guilds.cache.values()) {
+    const connection = getVoiceConnection(guild.id);
+    if (connection && connection.joinConfig.channelId) {
+      const guild = client.guilds.cache.get(guildId);
+      const voiceChannel = guild.channels.cache.get(connection.joinConfig.channelId);
+      return { connection, voiceChannel };
+    }
+  }
+  return null;
+};
+
+
 module.exports = {
   HandleTTSResponse,
   ClearTemporaryAudioFiles,
@@ -383,6 +399,8 @@ module.exports = {
   PlayNextAudio,
   JoinVoiceChannel,
   CreateListeningStream,
-  TranscribeAudio
+  TranscribeAudio,
+  GetClientVoiceData,
+  HandleVoiceCallInput
 };
   
