@@ -11,6 +11,7 @@ module.exports = async (client) => {
     ClearTemporaryAudioFiles();
     LeaveUnregisteredGuilds(client);
     const voiceData = GetClientVoiceData(client);
+    console.log(voiceData)
     if (voiceData){
       const { connection, voiceChannel } = voiceData;
       HandleVoiceCallInput(connection, client, voiceChannel);

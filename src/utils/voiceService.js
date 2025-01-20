@@ -195,7 +195,7 @@ async function HandleVoiceCallInput(connection, client, voiceChannel) {
 
   receiver.speaking.on('start', (userId) => {
     if (activeSessions.has(userId)) {
-      console.warn(`Warning - HandleVoiceCallInput: Skipping stream create because user ${userId} already has an active session.`);
+      //console.warn(`Warning - HandleVoiceCallInput: Skipping stream create because user ${userId} already has an active session.`);
       return;
     }
     
@@ -207,7 +207,7 @@ async function HandleVoiceCallInput(connection, client, voiceChannel) {
   receiver.speaking.on('end', async (userId) => {
       const baseFile = activeSessions.get(userId);
       if (!baseFile) {
-        console.error(`Error - HandleVoiceCallInput: No active session found for user ${userId}`);
+        //console.error(`Error - HandleVoiceCallInput: No active session found for user ${userId}`);
         return;
       }
 
@@ -225,7 +225,7 @@ async function HandleVoiceCallInput(connection, client, voiceChannel) {
       if (fs.existsSync(pcmPath)) {
         try{
           if (processingFiles.has(pcmPath)) {
-            console.warn(`Warning - HandleVoiceCallInput: Skipping duplicate processing for file: ${mp3Path}`);
+            //console.warn(`Warning - HandleVoiceCallInput: Skipping duplicate processing for file: ${mp3Path}`);
             return;
           }
           processingFiles.add(pcmPath);
@@ -244,6 +244,8 @@ async function HandleVoiceCallInput(connection, client, voiceChannel) {
 
                     const user = client.users.cache.get(userId)
                     const spokenMessage = await TranscribeAudio(mp3Path);
+                    fs.unlinkSync(pcmPath);
+                    fs.unlinkSync(mp3Path);
 
                     HandleCallResponse(spokenMessage, user.username, voiceChannel, client);
                     processingFiles.delete(pcmPath);
@@ -304,40 +306,38 @@ function CreateListeningStream(receiver, userId, filename) {
 
     // Handle end of stream
     opusStream.on('end', () => {
-        console.log('Opus stream ended');
+        console.log('Processing - CreateListeningStream: Opus stream ended');
         opusStreamState[userId] = true;
     });
 
     oggStream.on('end', () => {
-        console.log('Ogg stream ended');
+        console.log('Processing - CreateListeningStream: Ogg stream ended');
     });
 
     out.on('finish', () => {
-        console.log('File write completed');
+        console.log('Success - CreateListeningStream: File write completed');
     });
 
     pipeline(opusStream, oggStream, out, (err) => {
         if (err) {
-            console.warn(`❌ Error recording file ${pcm_filePath} - ${err.message}`);
-        } else {
-            console.log(`✅ Recorded ${pcm_filePath}`);
-        }
+            console.error(`Error - CreateListeningStream: recording file ${pcm_filePath} - ${err.message}`);
+        } 
     });
 
       // Handling potential errors with each stream
     opusStream.on('error', (err) => {
-      console.error(`Opus stream error: ${err.message}`);
+      console.error(`Error - CreateListeningStream: Opus stream error: ${err.message}`);
     });
 
     oggStream.on('error', (err) => {
-        console.error(`Ogg stream error: ${err.message}`);
+        console.error(`Error - CreateListeningStream: Ogg stream error: ${err.message}`);
     });
 
     out.on('error', (err) => {
-        console.error(`File write error: ${err.message}`);
+        console.error(`Error - CreateListeningStream: File write error: ${err.message}`);
     });
   }catch(error){
-    console.error(`Error - createListeningStream: ${error.message}`);
+    console.error(`Error - CreateListeningStream: ${error.message}`);
   }
   
 }
