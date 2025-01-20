@@ -2,7 +2,7 @@ const dotenv = require("dotenv");
 const {ElevenLabsClient} = require('elevenlabs');
 const fs = require('fs');
 const path = require('path');
-const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, EndBehaviorType, entersState, VoiceConnectionStatus, StreamType  } = require('@discordjs/voice');
+const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, EndBehaviorType, entersState, VoiceConnectionStatus, getVoiceConnection  } = require('@discordjs/voice');
 //const ffmpeg = require('ffmpeg-static');
 const ffmpeg = require('ffmpeg');
 const prism = require('prism-media');
@@ -22,6 +22,7 @@ const audioQueue = [];
 let isPlaying = false;
 const activeSessions = new Map();
 const opusStreamState = {};
+const processingFiles = new Set(); // Track ongoing MP3 conversions
 
 dotenv.config();
 
@@ -142,7 +143,13 @@ async function PlayNextAudio(client, username) {
     connection.subscribe(player);
 
     player.on(AudioPlayerStatus.Idle, () => {
-      fs.unlinkSync(filePath);
+      setTimeout(() => {
+        try {
+            fs.unlinkSync(filePath);
+        } catch (err) {
+            console.error('Error deleting file:', err);
+        }
+      }, 100); // Allow time for processes to release the file
       isPlaying = false;
       PlayNextAudio(client, author_username);
     });
@@ -188,7 +195,7 @@ async function HandleVoiceCallInput(connection, client, voiceChannel) {
 
   receiver.speaking.on('start', (userId) => {
     if (activeSessions.has(userId)) {
-      console.warn(`Warning - HandleVoiceCallInput: Skipping stream create because user ${userId} already has an active session.`);
+      //console.warn(`Warning - HandleVoiceCallInput: Skipping stream create because user ${userId} already has an active session.`);
       return;
     }
     
@@ -200,13 +207,12 @@ async function HandleVoiceCallInput(connection, client, voiceChannel) {
   receiver.speaking.on('end', async (userId) => {
       const baseFile = activeSessions.get(userId);
       if (!baseFile) {
-        console.error(`Error - HandleVoiceCallInput: No active session found for user ${userId}`);
+        //console.error(`Error - HandleVoiceCallInput: No active session found for user ${userId}`);
         return;
       }
 
       // Wait until the Opus stream has ended
       while (!opusStreamState[userId]) {
-        console.log(`Waiting for opus stream...`);
         await new Promise((resolve) => setTimeout(resolve, 500)); // Small delay to avoid busy-wait
       }
 
@@ -214,50 +220,45 @@ async function HandleVoiceCallInput(connection, client, voiceChannel) {
       const pcmPath = `${baseFilePath}.pcm`;
       const mp3Path = `${baseFilePath}.mp3`;
 
+    
+
       if (fs.existsSync(pcmPath)) {
         try{
+          if (processingFiles.has(pcmPath)) {
+            //console.warn(`Warning - HandleVoiceCallInput: Skipping duplicate processing for file: ${mp3Path}`);
+            return;
+          }
+          processingFiles.add(pcmPath);
           const process = new ffmpeg(pcmPath);
           process.then(function (audio) {
               audio.fnExtractSoundToMP3(mp3Path, async function (error, file) {
+                
                 if (error) {
                     console.error('Error - HandleVoiceCallInput: during MP3 conversion:', error);
                 } else {
                     console.log('Success - HandleVoiceCallInput: MP3 file generated at:', file);
 
-                    // Delete pcm
-                    fs.unlinkSync(pcmPath);
+                    
 
                     activeSessions.delete(userId);
 
                     const user = client.users.cache.get(userId)
                     const spokenMessage = await TranscribeAudio(mp3Path);
-
-                    // Delete mp3 file
+                    fs.unlinkSync(pcmPath);
                     fs.unlinkSync(mp3Path);
-                    
-                    // Handle call response
+
                     HandleCallResponse(spokenMessage, user.username, voiceChannel, client);
+                    processingFiles.delete(pcmPath);
                 }
               });
-          }).catch((err) => console.error('FFmpeg process failed:', err));
-        } catch (err){
-          console.error(`Error - HandleVoiceCallInput: converting PCM to MP3: ${err.message}`);
-        }
-        /*
-        const command = `${ffmpeg} -y -f s16le -ar 48000 -ac 2 -i ${pcmPath} -c:a libmp3lame ${mp3Path}`;
-          exec(command, (error, stdout, stderr) => {
-              if (error) {
-                  console.error('Error during MP3 conversion:', error.message);
-                  return;
-              }
-              console.log('MP3 file generated successfully:', mp3Path);
-              console.log('stdout:', stdout);
-              console.log('stderr:', stderr);
+          }).catch((err) => {
+            processingFiles.delete(pcmPath);
+            console.error('Error - HandleVoiceCallInput: FFmpeg process failed:', err)
           });
-          */
-      
-        
-      
+        } catch (err){
+          processingFiles.delete(pcmPath);
+          console.error(`Error - HandleVoiceCallInput: converting PCM to MP3: ${err.message}`);
+        }     
       } else {
         console.error(`Error - HandleVoiceCallInput: PCM file not found at ${pcmPath}`);
       }
@@ -274,12 +275,13 @@ async function HandleVoiceCallInput(connection, client, voiceChannel) {
 function CreateListeningStream(receiver, userId, filename) {
   const pcm_file = `${filename}.pcm`
   const pcm_filePath = path.join(audioDirectory, pcm_file);
+  const silenceTrigger = 4000
 
   try{
     const opusStream = receiver.subscribe(userId, {
       end: {
           behavior: EndBehaviorType.AfterSilence,
-          duration: 5000,
+          duration: silenceTrigger,
       },
     });
 
@@ -304,40 +306,38 @@ function CreateListeningStream(receiver, userId, filename) {
 
     // Handle end of stream
     opusStream.on('end', () => {
-        console.log('Opus stream ended');
+        console.log('Processing - CreateListeningStream: Opus stream ended');
         opusStreamState[userId] = true;
     });
 
     oggStream.on('end', () => {
-        console.log('Ogg stream ended');
+        console.log('Processing - CreateListeningStream: Ogg stream ended');
     });
 
     out.on('finish', () => {
-        console.log('File write completed');
+        console.log('Success - CreateListeningStream: File write completed');
     });
 
     pipeline(opusStream, oggStream, out, (err) => {
         if (err) {
-            console.warn(`❌ Error recording file ${pcm_filePath} - ${err.message}`);
-        } else {
-            console.log(`✅ Recorded ${pcm_filePath}`);
-        }
+            console.error(`Error - CreateListeningStream: recording file ${pcm_filePath} - ${err.message}`);
+        } 
     });
 
       // Handling potential errors with each stream
     opusStream.on('error', (err) => {
-      console.error(`Opus stream error: ${err.message}`);
+      console.error(`Error - CreateListeningStream: Opus stream error: ${err.message}`);
     });
 
     oggStream.on('error', (err) => {
-        console.error(`Ogg stream error: ${err.message}`);
+        console.error(`Error - CreateListeningStream: Ogg stream error: ${err.message}`);
     });
 
     out.on('error', (err) => {
-        console.error(`File write error: ${err.message}`);
+        console.error(`Error - CreateListeningStream: File write error: ${err.message}`);
     });
   }catch(error){
-    console.error(`Error - createListeningStream: ${error.message}`);
+    console.error(`Error - CreateListeningStream: ${error.message}`);
   }
   
 }
@@ -379,6 +379,19 @@ async function HandleCallResponse(message, username, voiceChannel, client){
 }
 
 
+function GetClientVoiceData(client) {
+  for (const guild of client.guilds.cache.values()) {
+    const connection = getVoiceConnection(guild.id);
+    if (connection && connection.joinConfig.channelId) {
+      const guild = client.guilds.cache.get(guildId);
+      const voiceChannel = guild.channels.cache.get(connection.joinConfig.channelId);
+      return { connection, voiceChannel };
+    }
+  }
+  return null;
+};
+
+
 module.exports = {
   HandleTTSResponse,
   ClearTemporaryAudioFiles,
@@ -386,6 +399,8 @@ module.exports = {
   PlayNextAudio,
   JoinVoiceChannel,
   CreateListeningStream,
-  TranscribeAudio
+  TranscribeAudio,
+  GetClientVoiceData,
+  HandleVoiceCallInput
 };
   
