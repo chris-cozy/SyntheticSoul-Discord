@@ -8,7 +8,7 @@
  */
 const dotenv = require("dotenv");
 dotenv.config();
-const { Client, IntentsBitField } = require("discord.js");
+const { Client, IntentsBitField, Partials } = require("discord.js");
 const eventHandler = require("./handlers/eventHandler");
 
 //-----SETUP-----//
@@ -25,6 +25,7 @@ const client = new Client({
     IntentsBitField.Flags.DirectMessages,
     IntentsBitField.Flags.DirectMessageTyping
   ],
+  partials: [Partials.Channel]
 });
 
 // Immediately invoked function, made async to wait for database connection

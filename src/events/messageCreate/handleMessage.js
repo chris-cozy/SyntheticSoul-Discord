@@ -3,6 +3,8 @@ const dotenv = require("dotenv");
 dotenv.config();
 const { HandleTTSResponse, PushToAudioQueue, PlayNextAudio } = require("../../utils/voiceService");
 const { CheckImplicitAddressing, GetResponse } = require("../../utils/syntheticSoulService");
+const DM_CHANNEL = 1;
+const SERVER_CHANNEL = 0;
 
 /**
  * @brief Handle a message sent in the server.
@@ -14,8 +16,10 @@ module.exports = async (client, msg) => {
   if (msg.author.id === client.user.id) return;
   const username = msg.author.username;
 
-  if(!(await CheckImplicitAddressing(msg.content, username))) return;
-    
+  if (msg.channel.type === SERVER_CHANNEL) {
+    if(!(await CheckImplicitAddressing(msg.content, username))) return;
+  }
+ 
   const response =  await GetResponse(msg.content, username);
 
   const voiceChannel = msg.member?.voice.channel;
