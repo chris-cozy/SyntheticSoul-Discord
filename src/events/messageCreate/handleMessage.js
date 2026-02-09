@@ -29,13 +29,9 @@ module.exports = async (client, msg) => {
     if (!msg.mentions.has(client.user.id)) {
       return;
     }
-
-    const mentionPattern = new RegExp(`<@!?${client.user.id}>`, "g");
-    inputText = inputText.replace(mentionPattern, "").trim();
-
-    if (!inputText.length) {
-      return;
-    }
+    // Keep the mention token in group messages so API-side implicit-address
+    // detection can reliably identify that the bot was addressed.
+    inputText = inputText.trim();
   }
 
   const messageType = isDirectMessage ? "dm" : "group";
@@ -48,6 +44,11 @@ module.exports = async (client, msg) => {
   const voiceChannel = msg.member?.voice?.channel;
   if (voiceChannel) {
     const filePath = await HandleTTSResponse(response);
+    if (!filePath) {
+      await msg.channel.send("I could not generate voice audio right now, so I replied in text instead.");
+      await msg.channel.send(response);
+      return;
+    }
     PushToAudioQueue(filePath, voiceChannel, msg.author.id);
     PlayNextAudio(client, msg.author.id);
     return;

@@ -25,10 +25,14 @@ module.exports = (client) => {
         // Extract function/module from each file in event
         client.on(discordEventName, async (arg) => {
             for (const eventFile of eventFiles) {
-                const eventFunction = require(eventFile);
+                try {
+                    const eventFunction = require(eventFile);
 
-                // Run function, passing in any necessary arguments
-                await eventFunction(client, arg)
+                    // Run function, passing in any necessary arguments
+                    await eventFunction(client, arg);
+                } catch (error) {
+                    console.error(`Error - eventHandler: Failed in ${eventName}/${path.basename(eventFile)}:`, error);
+                }
             }
         })
     }
