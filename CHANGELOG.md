@@ -20,11 +20,16 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 ### Changed
 - Updated message handling to map channel contexts to API message types (`dm`, `group`).
 - Updated README with current setup and runtime guidance.
+- Updated package metadata name to valid npm format: `syntheticsoul-discord`.
+- Synced lockfile package name metadata with `package.json`.
 
 ### Fixed
 - Fixed command handler checks for mixed `devOnly`/`devonly` metadata.
 - Fixed voice-service integration issues tied to response identity flow.
 - Added fallback reply retrieval for intermittent job polling ownership/404 cases.
+- Updated dynamic event binding to use `clientReady` for the `ready` event folder to avoid the Discord.js deprecation warning.
+- Ensured the local audio temp directory is created before startup cleanup and voice file writes, preventing `ENOENT` on missing `src/audio`.
+- Removed startup debug logging that printed `null` voice session state on boot.
 
 [unreleased]: https://github.com/chris-cozy/SyntheticSoul-Discord/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/chris-cozy/SyntheticSoul-Discord/releases/tag/v1.0.0
