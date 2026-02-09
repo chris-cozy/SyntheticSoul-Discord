@@ -1,52 +1,53 @@
 const { EmbedBuilder } = require("discord.js");
 const { Client, Interaction } = require("discord.js");
+const { getActiveAgent } = require("../../utils/syntheticSoulService");
+const { deferInteractionReply, sendInteractionReply } = require("../../utils/interactionHelpers");
 
 module.exports = {
   name: "emotion",
-  description: "information about the program's emotional status",
+  description: "show live emotional metrics for the active agent",
   devonly: false,
   testOnly: false,
   deleted: false,
 
   /**
-   * @brief Send an embed with program's emotion information
+   * @brief Send an embed with the agent's emotional information.
    * @param {Client} client
    * @param {Interaction} interaction
    */
   callback: async (client, interaction) => {
-    let self = await GrabSelf(process.env.BOT_NAME);
-
-    let embed;
+    await deferInteractionReply(interaction);
 
     try {
-        
-      embed = new EmbedBuilder()
+      const agent = await getActiveAgent(interaction.user.id, interaction.user.username);
+      const emotions = agent?.emotional_status?.emotions || {};
+
+      const embed = new EmbedBuilder()
         .setTitle(`${client.user.username}'s current emotions`)
         .setColor("Random")
         .setURL("https://github.com/chris-cozy/SyntheticSoul-Discord")
         .setThumbnail(client.user.displayAvatarURL())
         .setTimestamp()
         .setFooter({
-          text: `requested by ${interaction.user.username} `,
+          text: `requested by ${interaction.user.username}`,
           iconURL: `${interaction.user.displayAvatarURL()}`,
         });
-        
-      /*
-      const emotions = // call api endpoint to get emotions
-      for (const emotion in emotions) {
-        // Skip the _id field, as it's not an emotion
-        if (emotion === "_id") continue;
-      
-        const value = emotions[emotion].value;
-        console.log(`${emotion}: ${value}`);
-        embed.addFields({ name: `${emotion}`, value: value.toString(), inline: true });
-      }
-        */
-      interaction.reply({ embeds: [embed] });
 
+      const entries = Object.entries(emotions)
+        .filter(([, value]) => value && typeof value === "object" && Number.isFinite(value.value))
+        .slice(0, 12);
+
+      if (!entries.length) {
+        embed.setDescription("No emotional metrics were returned by the API.");
+      } else {
+        for (const [emotion, value] of entries) {
+          embed.addFields({ name: emotion, value: String(value.value), inline: true });
+        }
+      }
+
+      await sendInteractionReply(interaction, { embeds: [embed] });
     } catch (error) {
-      interaction.reply({ embeds: [embed] });
-      console.log(`Error - ${error.message}`);
+      await sendInteractionReply(interaction, `Unable to load emotional status right now: ${error.message}`);
     }
   },
 };

@@ -1,6 +1,5 @@
 const { Client } = require("discord.js");
 const { ClearTemporaryAudioFiles, HandleVoiceCallInput, GetClientVoiceData } = require("../../utils/voiceService");
-const { LeaveUnregisteredGuilds } = require("../../utils/logicHelpers");
 
 /**
  * @brief
@@ -9,7 +8,6 @@ const { LeaveUnregisteredGuilds } = require("../../utils/logicHelpers");
 module.exports = async (client) => {
   try {
     ClearTemporaryAudioFiles();
-    LeaveUnregisteredGuilds(client);
     const voiceData = GetClientVoiceData(client);
     console.log(voiceData)
     if (voiceData){

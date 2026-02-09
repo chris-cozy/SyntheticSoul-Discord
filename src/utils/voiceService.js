@@ -20,6 +20,9 @@ const elevenLabsClient = new ElevenLabsClient({ apiKey: process.env.ELEVENLABS_K
 const audioDirectory = path.join(__dirname, '..', 'audio');
 const audioQueue = [];
 let isPlaying = false;
+let leaveVoiceChannelTimeout = null;
+let lastVoiceChannel = null;
+let lastVoiceConnection = null;
 const activeSessions = new Map();
 const opusStreamState = {};
 const processingFiles = new Set(); // Track ongoing MP3 conversions
@@ -89,10 +92,10 @@ async function ClearTemporaryAudioFiles(){
  * @brief Pushes audio filepath and desired voiceChannel to the queue
  * @param {String} filePath - File path of the audio file to push into the queue
  * @param {VoiceChannel} voiceChannel - Voice channel to play the audio in
- * @param {Message} username - Username of message sender
+ * @param {String} authorId - User ID of message sender
  */
-function PushToAudioQueue(filePath, voiceChannel, username){
-  audioQueue.push({ filePath, voiceChannel, username });
+function PushToAudioQueue(filePath, voiceChannel, authorId){
+  audioQueue.push({ filePath, voiceChannel, authorId });
 }
 
 /**
@@ -100,10 +103,9 @@ function PushToAudioQueue(filePath, voiceChannel, username){
  * @param {Client} client - Bot client
  * @param {String} author_id - User ID of the source message author
  */
-async function PlayNextAudio(client, username) {
+async function PlayNextAudio(client, authorId) {
   if (isPlaying) return;
-  let lastVoiceChannel = null;
-  const lastMessageAuthorId = username;
+  const lastMessageAuthorId = authorId;
   
   if (audioQueue.length === 0) {
     isPlaying = false;
@@ -111,9 +113,14 @@ async function PlayNextAudio(client, username) {
     // If the bot is still connected, check the presence of the last message sender
     const voiceChannel = lastVoiceChannel;
     if (!voiceChannel) return;
+    if (!lastVoiceConnection) return;
+
+    if (leaveVoiceChannelTimeout) {
+      clearTimeout(leaveVoiceChannelTimeout);
+      leaveVoiceChannelTimeout = null;
+    }
 
     if (!lastMessageAuthorId) return;
-
     const lastMessageAuthor = voiceChannel.members.get(lastMessageAuthorId);
 
     if (!lastMessageAuthor) {
@@ -122,7 +129,9 @@ async function PlayNextAudio(client, username) {
           (member) => member.user.id !== client.user.id
         );
         if (nonBotMembers.size === 0) {
-          connection?.destroy();
+          lastVoiceConnection?.destroy();
+          lastVoiceConnection = null;
+          lastVoiceChannel = null;
         }
       }, 15000);
     } 
@@ -130,11 +139,17 @@ async function PlayNextAudio(client, username) {
   }
 
   try{
+    if (leaveVoiceChannelTimeout) {
+      clearTimeout(leaveVoiceChannelTimeout);
+      leaveVoiceChannelTimeout = null;
+    }
+
     isPlaying = true;
-    const { filePath, voiceChannel, author_username } = audioQueue.shift();
+    const { filePath, voiceChannel, authorId: nextAuthorId } = audioQueue.shift();
     const connection = await JoinVoiceChannel(voiceChannel, client);
 
     lastVoiceChannel = voiceChannel;
+    lastVoiceConnection = connection;
 
     const player = createAudioPlayer();
     const resource = createAudioResource(filePath);
@@ -151,7 +166,7 @@ async function PlayNextAudio(client, username) {
         }
       }, 100); // Allow time for processes to release the file
       isPlaying = false;
-      PlayNextAudio(client, author_username);
+      PlayNextAudio(client, nextAuthorId);
     });
 
     player.on('error', (error) => {
@@ -172,6 +187,15 @@ async function PlayNextAudio(client, username) {
  * @returns Voice channel connection
  */
 function JoinVoiceChannel(voiceChannel, client){
+  const existingConnection = getVoiceConnection(voiceChannel.guild.id);
+  if (existingConnection && existingConnection.joinConfig.channelId === voiceChannel.id) {
+    return existingConnection;
+  }
+
+  if (existingConnection) {
+    existingConnection.destroy();
+  }
+
   const connection = joinVoiceChannel({
     channelId: voiceChannel.id,
     guildId: voiceChannel.guild.id,
@@ -247,7 +271,7 @@ async function HandleVoiceCallInput(connection, client, voiceChannel) {
                     fs.unlinkSync(pcmPath);
                     fs.unlinkSync(mp3Path);
 
-                    HandleCallResponse(spokenMessage, user.username, voiceChannel, client);
+                    HandleCallResponse(spokenMessage, userId, user?.username || `user_${userId}`, voiceChannel, client);
                     processingFiles.delete(pcmPath);
                 }
               });
@@ -361,19 +385,23 @@ async function TranscribeAudio(filePath) {
 /**
  * @brief Handles responding to a message in voice call.
  * @param {String} message - spoken message
+ * @param {String} userId - The speaker's Discord user ID
  * @param {String} username - The speaker's username
  * @param {VoiceChannel} voiceChannel - The voice channel the message was spoken in
  * @param {Client} client - The client
  */
-async function HandleCallResponse(message, username, voiceChannel, client){
+async function HandleCallResponse(message, userId, username, voiceChannel, client){
+  if (!voiceChannel) return;
   if(!(await CheckImplicitAddressing(message, username))) return;
     
-  const response =  await GetResponse(message, username);
+  const response =  await GetResponse(message, username, 'dm', userId);
+  if (!response || typeof response !== "string") return;
 
   const filePath = await HandleTTSResponse(response)
+  if (!filePath) return;
 
-  PushToAudioQueue(filePath, voiceChannel, username);
-  PlayNextAudio(client, username)
+  PushToAudioQueue(filePath, voiceChannel, userId);
+  PlayNextAudio(client, userId)
     
   return;  
 }
@@ -383,7 +411,6 @@ function GetClientVoiceData(client) {
   for (const guild of client.guilds.cache.values()) {
     const connection = getVoiceConnection(guild.id);
     if (connection && connection.joinConfig.channelId) {
-      const guild = client.guilds.cache.get(guildId);
       const voiceChannel = guild.channels.cache.get(connection.joinConfig.channelId);
       return { connection, voiceChannel };
     }

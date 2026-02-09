@@ -64,6 +64,31 @@ async function GetApplicationCommands(client, guildId){
  * @returns whether the commands are different (boolean)
  */
 function AreCommandsDifferent(existingCommand, localCommand){
+    function normalizeNumericArray(values) {
+        if (!Array.isArray(values)) {
+            return [];
+        }
+
+        return values
+            .map((value) => Number(value))
+            .filter((value) => Number.isFinite(value))
+            .sort((a, b) => a - b);
+    }
+
+    function areArraysEqual(left, right) {
+        if (left.length !== right.length) {
+            return false;
+        }
+
+        for (let index = 0; index < left.length; index += 1) {
+            if (left[index] !== right[index]) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     // Check if the choices are different
     function areChoicesDifferent(existingChoices, localChoices) {
         for (const localChoice of localChoices) {
@@ -118,6 +143,22 @@ function AreCommandsDifferent(existingCommand, localCommand){
         existingCommand.options?.length !== (localCommand.options?.length || 0) ||
         areOptionsDifferent(existingCommand.options, localCommand.options || [])
     ) {
+        return true;
+    }
+
+    const existingContexts = normalizeNumericArray(existingCommand.contexts);
+    const localContexts = normalizeNumericArray(localCommand.contexts);
+    if (!areArraysEqual(existingContexts, localContexts)) {
+        return true;
+    }
+
+    const existingIntegrationTypes = normalizeNumericArray(
+        existingCommand.integrationTypes || existingCommand.integration_types
+    );
+    const localIntegrationTypes = normalizeNumericArray(
+        localCommand.integrationTypes || localCommand.integration_types
+    );
+    if (!areArraysEqual(existingIntegrationTypes, localIntegrationTypes)) {
         return true;
     }
 
