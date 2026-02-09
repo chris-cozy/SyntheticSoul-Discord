@@ -20,9 +20,10 @@ module.exports = (client) => {
 
         // Replace all \\ with / (windows OS), then remove them to get event name
         const eventName = eventFolder.replace(/\\/g, '/').split('/').pop();
+        const discordEventName = eventName === "ready" ? "clientReady" : eventName;
 
         // Extract function/module from each file in event
-        client.on(eventName, async (arg) => {
+        client.on(discordEventName, async (arg) => {
             for (const eventFile of eventFiles) {
                 const eventFunction = require(eventFile);
 

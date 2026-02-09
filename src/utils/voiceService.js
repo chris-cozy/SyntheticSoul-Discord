@@ -29,6 +29,12 @@ const processingFiles = new Set(); // Track ongoing MP3 conversions
 
 dotenv.config();
 
+function EnsureAudioDirectory() {
+  if (!fs.existsSync(audioDirectory)) {
+    fs.mkdirSync(audioDirectory, { recursive: true });
+  }
+}
+
 
 
 /**
@@ -37,6 +43,7 @@ dotenv.config();
  * @returns Filepath of temporary file
  */
 async function HandleTTSResponse(response) {
+    EnsureAudioDirectory();
 
     const tts = await elevenLabsClient.generate({
         voice: process.env.VOICE_ID,
@@ -74,6 +81,7 @@ async function HandleTTSResponse(response) {
  */
 async function ClearTemporaryAudioFiles(){
   try {
+      EnsureAudioDirectory();
       const files = fs.readdirSync(audioDirectory);
       
       files.forEach((file) => {
@@ -297,6 +305,7 @@ async function HandleVoiceCallInput(connection, client, voiceChannel) {
  * @param {String} filename - The filename for use when creating the .pcm
  */
 function CreateListeningStream(receiver, userId, filename) {
+  EnsureAudioDirectory();
   const pcm_file = `${filename}.pcm`
   const pcm_filePath = path.join(audioDirectory, pcm_file);
   const silenceTrigger = 4000
