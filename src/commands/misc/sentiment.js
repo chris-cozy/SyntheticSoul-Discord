@@ -1,49 +1,51 @@
 const { EmbedBuilder } = require("discord.js");
 const { Client, Interaction } = require("discord.js");
+const { getConversation } = require("../../utils/syntheticSoulService");
+const { deferInteractionReply, sendInteractionReply } = require("../../utils/interactionHelpers");
 
 module.exports = {
   name: "sentiment",
-  description: "information on the program's sentiment towards you",
+  description: "show conversation context status for your current identity",
   devonly: false,
   testOnly: false,
   deleted: false,
 
   /**
-   * @brief Send an embed with sentiment information
+   * @brief Send an embed with conversation-context status.
    * @param {Client} client
    * @param {Interaction} interaction
    */
   callback: async (client, interaction) => {
+    await deferInteractionReply(interaction);
+
     try {
-        
+      const conversation = await getConversation(interaction.user.id, interaction.user.username);
+      const messages = Array.isArray(conversation?.messages) ? conversation.messages : [];
+      const latest = messages.length ? messages[messages.length - 1] : null;
+
       const embed = new EmbedBuilder()
-        .setTitle(`${client.user.username}'s sentiment towards ${interaction.user.username}`)
+        .setTitle(`${client.user.username}'s context for ${interaction.user.username}`)
         .setColor("Random")
         .setURL("https://github.com/chris-cozy/SyntheticSoul-Discord")
         .setThumbnail(interaction.user.displayAvatarURL())
+        .addFields(
+          { name: "Conversation ID", value: `\`${conversation?.id || "unknown"}\``, inline: false },
+          { name: "Total Messages", value: `\`${messages.length}\``, inline: true },
+          { name: "Last Message Role", value: `\`${latest ? (latest.from_agent ? "assistant" : "user") : "n/a"}\``, inline: true }
+        )
         .setTimestamp()
         .setFooter({
-          text: `requested by ${interaction.user.username} `,
+          text: `requested by ${interaction.user.username}`,
           iconURL: `${interaction.user.displayAvatarURL()}`,
         });
-        
-        // TODO: Call Endpoint to get sentiment information
-        /*
-        const sentiments = user.sentiment_status.sentiments.toObject();
-      for (const sentiment in sentiments) {
-        // Skip the _id field, as it's not an emotion
-        if (sentiment === "_id") continue;
-      
-        const value = sentiments[sentiment].value;
-        console.log(`${sentiment}: ${value}`);
-        embed.addFields({ name: `${sentiment}`, value: value.toString(), inline: true });
-      }
-        */
-      interaction.reply({ embeds: [embed] });
 
+      if (!messages.length) {
+        embed.setDescription("No stored conversation history found yet for this identity.");
+      }
+
+      await sendInteractionReply(interaction, { embeds: [embed] });
     } catch (error) {
-      interaction.reply({ embeds: [embed] });
-      console.log(`Error - ${error.message}`);
+      await sendInteractionReply(interaction, `Unable to read conversation context: ${error.message}`);
     }
   },
 };

@@ -3,11 +3,10 @@ const {ElevenLabsClient} = require('elevenlabs');
 const fs = require('fs');
 const path = require('path');
 const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, EndBehaviorType, entersState, VoiceConnectionStatus, getVoiceConnection  } = require('@discordjs/voice');
-//const ffmpeg = require('ffmpeg-static');
-const ffmpeg = require('ffmpeg');
+const ffmpegStatic = require('ffmpeg-static');
 const prism = require('prism-media');
-const { exec } = require('child_process');
-const { Collection, VoiceChannel } = require('discord.js');
+const { execFile } = require('child_process');
+const { VoiceChannel } = require('discord.js');
 const { createWriteStream } = require('node:fs');
 const { pipeline } = require('node:stream');
 const { Configuration, OpenAIApi } = require("openai");
@@ -20,11 +19,56 @@ const elevenLabsClient = new ElevenLabsClient({ apiKey: process.env.ELEVENLABS_K
 const audioDirectory = path.join(__dirname, '..', 'audio');
 const audioQueue = [];
 let isPlaying = false;
+let leaveVoiceChannelTimeout = null;
+let lastVoiceChannel = null;
+let lastVoiceConnection = null;
 const activeSessions = new Map();
 const opusStreamState = {};
 const processingFiles = new Set(); // Track ongoing MP3 conversions
 
 dotenv.config();
+
+function EnsureAudioDirectory() {
+  if (!fs.existsSync(audioDirectory)) {
+    fs.mkdirSync(audioDirectory, { recursive: true });
+  }
+}
+
+function SafeUnlink(filePath) {
+  try {
+    if (filePath && fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+  } catch (error) {
+    console.error(`Error - SafeUnlink: Could not delete ${filePath}:`, error.message);
+  }
+}
+
+async function ConvertOggToMp3(oggPath, mp3Path) {
+  if (!ffmpegStatic) {
+    throw new Error("ffmpeg-static binary unavailable on this platform.");
+  }
+
+  return new Promise((resolve, reject) => {
+    const args = [
+      "-y",
+      "-i", oggPath,
+      "-vn",
+      "-ar", "44100",
+      "-ac", "2",
+      "-ab", "192k",
+      "-f", "mp3",
+      mp3Path,
+    ];
+
+    execFile(ffmpegStatic, args, (error, _stdout, stderr) => {
+      if (error) {
+        return reject(new Error(`${error.message}${stderr ? ` | ${stderr.trim()}` : ""}`));
+      }
+      resolve(mp3Path);
+    });
+  });
+}
 
 
 
@@ -34,35 +78,79 @@ dotenv.config();
  * @returns Filepath of temporary file
  */
 async function HandleTTSResponse(response) {
+    EnsureAudioDirectory();
 
-    const tts = await elevenLabsClient.generate({
-        voice: process.env.VOICE_ID,
-        text:  response,
-        model_id: process.env.ELEVENLABS_MODEL_ID
-    });
-    
-    const fileName = `output_${Date.now()}.mp3`;
-    const filePath = path.join(audioDirectory, fileName);
-
-    const reader = tts.reader;
-  
-    const chunks = [];
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-          break;
+    async function readWebReaderToBuffer(reader) {
+      const chunks = [];
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          if (value) chunks.push(Buffer.from(value));
         }
-        chunks.push(value);
+      } finally {
+        if (reader && typeof reader.releaseLock === "function") {
+          reader.releaseLock();
+        }
       }
-      const buffer = Buffer.concat(chunks);
-      fs.writeFileSync(filePath, buffer);
+      return chunks.length ? Buffer.concat(chunks) : null;
+    }
 
+    async function readNodeStreamToBuffer(stream) {
+      return new Promise((resolve, reject) => {
+        const chunks = [];
+        stream.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
+        stream.on("end", () => resolve(chunks.length ? Buffer.concat(chunks) : null));
+        stream.on("error", reject);
+      });
+    }
+
+    async function normalizeTTSBuffer(tts) {
+      if (!tts) return null;
+      if (Buffer.isBuffer(tts)) return tts;
+      if (tts instanceof Uint8Array) return Buffer.from(tts);
+      if (typeof tts.arrayBuffer === "function") {
+        const ab = await tts.arrayBuffer();
+        return Buffer.from(ab);
+      }
+      if (typeof tts.getReader === "function") {
+        return readWebReaderToBuffer(tts.getReader());
+      }
+      if (tts.reader && typeof tts.reader.read === "function") {
+        return readWebReaderToBuffer(tts.reader);
+      }
+      if (typeof tts.pipe === "function") {
+        return readNodeStreamToBuffer(tts);
+      }
+      if (typeof tts[Symbol.asyncIterator] === "function") {
+        const chunks = [];
+        for await (const chunk of tts) {
+          chunks.push(Buffer.from(chunk));
+        }
+        return chunks.length ? Buffer.concat(chunks) : null;
+      }
+      return null;
+    }
+
+    try {
+      const tts = await elevenLabsClient.generate({
+          voice: process.env.VOICE_ID,
+          text: response,
+          model_id: process.env.ELEVENLABS_MODEL_ID
+      });
+
+      const buffer = await normalizeTTSBuffer(tts);
+      if (!buffer || !buffer.length) {
+        throw new Error("No audio buffer returned from ElevenLabs.");
+      }
+
+      const fileName = `output_${Date.now()}.mp3`;
+      const filePath = path.join(audioDirectory, fileName);
+      fs.writeFileSync(filePath, buffer);
       return filePath;
     } catch (err) {
-      console.error('Error - HandleTTSResponse: While reading stream:', err);
-    } finally {
-      reader.releaseLock(); // Ensure the lock is released after processing
+      console.error("Error - HandleTTSResponse:", err);
+      return null;
     }
 }
 
@@ -71,6 +159,7 @@ async function HandleTTSResponse(response) {
  */
 async function ClearTemporaryAudioFiles(){
   try {
+      EnsureAudioDirectory();
       const files = fs.readdirSync(audioDirectory);
       
       files.forEach((file) => {
@@ -89,10 +178,10 @@ async function ClearTemporaryAudioFiles(){
  * @brief Pushes audio filepath and desired voiceChannel to the queue
  * @param {String} filePath - File path of the audio file to push into the queue
  * @param {VoiceChannel} voiceChannel - Voice channel to play the audio in
- * @param {Message} username - Username of message sender
+ * @param {String} authorId - User ID of message sender
  */
-function PushToAudioQueue(filePath, voiceChannel, username){
-  audioQueue.push({ filePath, voiceChannel, username });
+function PushToAudioQueue(filePath, voiceChannel, authorId){
+  audioQueue.push({ filePath, voiceChannel, authorId });
 }
 
 /**
@@ -100,10 +189,9 @@ function PushToAudioQueue(filePath, voiceChannel, username){
  * @param {Client} client - Bot client
  * @param {String} author_id - User ID of the source message author
  */
-async function PlayNextAudio(client, username) {
+async function PlayNextAudio(client, authorId) {
   if (isPlaying) return;
-  let lastVoiceChannel = null;
-  const lastMessageAuthorId = username;
+  const lastMessageAuthorId = authorId;
   
   if (audioQueue.length === 0) {
     isPlaying = false;
@@ -111,9 +199,14 @@ async function PlayNextAudio(client, username) {
     // If the bot is still connected, check the presence of the last message sender
     const voiceChannel = lastVoiceChannel;
     if (!voiceChannel) return;
+    if (!lastVoiceConnection) return;
+
+    if (leaveVoiceChannelTimeout) {
+      clearTimeout(leaveVoiceChannelTimeout);
+      leaveVoiceChannelTimeout = null;
+    }
 
     if (!lastMessageAuthorId) return;
-
     const lastMessageAuthor = voiceChannel.members.get(lastMessageAuthorId);
 
     if (!lastMessageAuthor) {
@@ -122,7 +215,9 @@ async function PlayNextAudio(client, username) {
           (member) => member.user.id !== client.user.id
         );
         if (nonBotMembers.size === 0) {
-          connection?.destroy();
+          lastVoiceConnection?.destroy();
+          lastVoiceConnection = null;
+          lastVoiceChannel = null;
         }
       }, 15000);
     } 
@@ -130,11 +225,17 @@ async function PlayNextAudio(client, username) {
   }
 
   try{
+    if (leaveVoiceChannelTimeout) {
+      clearTimeout(leaveVoiceChannelTimeout);
+      leaveVoiceChannelTimeout = null;
+    }
+
     isPlaying = true;
-    const { filePath, voiceChannel, author_username } = audioQueue.shift();
+    const { filePath, voiceChannel, authorId: nextAuthorId } = audioQueue.shift();
     const connection = await JoinVoiceChannel(voiceChannel, client);
 
     lastVoiceChannel = voiceChannel;
+    lastVoiceConnection = connection;
 
     const player = createAudioPlayer();
     const resource = createAudioResource(filePath);
@@ -151,7 +252,7 @@ async function PlayNextAudio(client, username) {
         }
       }, 100); // Allow time for processes to release the file
       isPlaying = false;
-      PlayNextAudio(client, author_username);
+      PlayNextAudio(client, nextAuthorId);
     });
 
     player.on('error', (error) => {
@@ -172,6 +273,15 @@ async function PlayNextAudio(client, username) {
  * @returns Voice channel connection
  */
 function JoinVoiceChannel(voiceChannel, client){
+  const existingConnection = getVoiceConnection(voiceChannel.guild.id);
+  if (existingConnection && existingConnection.joinConfig.channelId === voiceChannel.id) {
+    return existingConnection;
+  }
+
+  if (existingConnection) {
+    existingConnection.destroy();
+  }
+
   const connection = joinVoiceChannel({
     channelId: voiceChannel.id,
     guildId: voiceChannel.guild.id,
@@ -217,64 +327,65 @@ async function HandleVoiceCallInput(connection, client, voiceChannel) {
       }
 
       const baseFilePath = path.join(audioDirectory, baseFile);
-      const pcmPath = `${baseFilePath}.pcm`;
+      const oggPath = `${baseFilePath}.ogg`;
       const mp3Path = `${baseFilePath}.mp3`;
 
     
 
-      if (fs.existsSync(pcmPath)) {
+      if (fs.existsSync(oggPath)) {
         try{
-          if (processingFiles.has(pcmPath)) {
+          if (processingFiles.has(oggPath)) {
             //console.warn(`Warning - HandleVoiceCallInput: Skipping duplicate processing for file: ${mp3Path}`);
             return;
           }
-          processingFiles.add(pcmPath);
-          const process = new ffmpeg(pcmPath);
-          process.then(function (audio) {
-              audio.fnExtractSoundToMP3(mp3Path, async function (error, file) {
-                
-                if (error) {
-                    console.error('Error - HandleVoiceCallInput: during MP3 conversion:', error);
-                } else {
-                    console.log('Success - HandleVoiceCallInput: MP3 file generated at:', file);
+          processingFiles.add(oggPath);
 
-                    
+          const convertedPath = await ConvertOggToMp3(oggPath, mp3Path);
+          console.log('Success - HandleVoiceCallInput: MP3 file generated at:', convertedPath);
 
-                    activeSessions.delete(userId);
+          const user = client.users.cache.get(userId);
+          const spokenMessage = await TranscribeAudio(convertedPath);
 
-                    const user = client.users.cache.get(userId)
-                    const spokenMessage = await TranscribeAudio(mp3Path);
-                    fs.unlinkSync(pcmPath);
-                    fs.unlinkSync(mp3Path);
+          SafeUnlink(oggPath);
+          SafeUnlink(mp3Path);
+          activeSessions.delete(userId);
+          delete opusStreamState[userId];
+          processingFiles.delete(oggPath);
 
-                    HandleCallResponse(spokenMessage, user.username, voiceChannel, client);
-                    processingFiles.delete(pcmPath);
-                }
-              });
-          }).catch((err) => {
-            processingFiles.delete(pcmPath);
-            console.error('Error - HandleVoiceCallInput: FFmpeg process failed:', err)
-          });
+          await HandleCallResponse(
+            spokenMessage,
+            userId,
+            user?.username || `user_${userId}`,
+            voiceChannel,
+            client
+          );
         } catch (err){
-          processingFiles.delete(pcmPath);
-          console.error(`Error - HandleVoiceCallInput: converting PCM to MP3: ${err.message}`);
+          processingFiles.delete(oggPath);
+          activeSessions.delete(userId);
+          delete opusStreamState[userId];
+          SafeUnlink(oggPath);
+          SafeUnlink(mp3Path);
+          console.error(`Error - HandleVoiceCallInput: converting OGG to MP3: ${err.message}`);
         }     
       } else {
-        console.error(`Error - HandleVoiceCallInput: PCM file not found at ${pcmPath}`);
+        activeSessions.delete(userId);
+        delete opusStreamState[userId];
+        console.error(`Error - HandleVoiceCallInput: OGG file not found at ${oggPath}`);
       }
 
   });
 }
 
 /**
- * @brief Creates the opus stream which writes to the .pcm file
+ * @brief Creates the opus stream which writes to the .ogg file
  * @param receiver - Voice call connection receiver
  * @param {String} userId - The user ID of the speaker
- * @param {String} filename - The filename for use when creating the .pcm
+ * @param {String} filename - The filename for use when creating the .ogg
  */
 function CreateListeningStream(receiver, userId, filename) {
-  const pcm_file = `${filename}.pcm`
-  const pcm_filePath = path.join(audioDirectory, pcm_file);
+  EnsureAudioDirectory();
+  const oggFile = `${filename}.ogg`;
+  const oggFilePath = path.join(audioDirectory, oggFile);
   const silenceTrigger = 4000
 
   try{
@@ -296,9 +407,9 @@ function CreateListeningStream(receiver, userId, filename) {
     });
 
 
-    const out = createWriteStream(pcm_filePath, { flags: 'a' });
+    const out = createWriteStream(oggFilePath, { flags: 'a' });
     opusStreamState[userId] = false;
-    console.log(`Success - CreateListeningStream: 👂Started recording ${pcm_filePath}`);
+    console.log(`Success - CreateListeningStream: 👂Started recording ${oggFilePath}`);
 
     opusStream.on('data', (chunk) => {
       // console.log(`Data chunk received: ${chunk.length} bytes`);
@@ -320,7 +431,7 @@ function CreateListeningStream(receiver, userId, filename) {
 
     pipeline(opusStream, oggStream, out, (err) => {
         if (err) {
-            console.error(`Error - CreateListeningStream: recording file ${pcm_filePath} - ${err.message}`);
+            console.error(`Error - CreateListeningStream: recording file ${oggFilePath} - ${err.message}`);
         } 
     });
 
@@ -361,19 +472,23 @@ async function TranscribeAudio(filePath) {
 /**
  * @brief Handles responding to a message in voice call.
  * @param {String} message - spoken message
+ * @param {String} userId - The speaker's Discord user ID
  * @param {String} username - The speaker's username
  * @param {VoiceChannel} voiceChannel - The voice channel the message was spoken in
  * @param {Client} client - The client
  */
-async function HandleCallResponse(message, username, voiceChannel, client){
+async function HandleCallResponse(message, userId, username, voiceChannel, client){
+  if (!voiceChannel) return;
   if(!(await CheckImplicitAddressing(message, username))) return;
     
-  const response =  await GetResponse(message, username);
+  const response =  await GetResponse(message, username, 'dm', userId);
+  if (!response || typeof response !== "string") return;
 
   const filePath = await HandleTTSResponse(response)
+  if (!filePath) return;
 
-  PushToAudioQueue(filePath, voiceChannel, username);
-  PlayNextAudio(client, username)
+  PushToAudioQueue(filePath, voiceChannel, userId);
+  PlayNextAudio(client, userId)
     
   return;  
 }
@@ -383,7 +498,6 @@ function GetClientVoiceData(client) {
   for (const guild of client.guilds.cache.values()) {
     const connection = getVoiceConnection(guild.id);
     if (connection && connection.joinConfig.channelId) {
-      const guild = client.guilds.cache.get(guildId);
       const voiceChannel = guild.channels.cache.get(connection.joinConfig.channelId);
       return { connection, voiceChannel };
     }

@@ -1,5 +1,6 @@
 .env
 node_modules/
 audio/
+data/
 todo.txt
 .vscode

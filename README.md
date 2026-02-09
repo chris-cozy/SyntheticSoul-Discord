@@ -1,119 +1,139 @@
-# Synthetic Soul : A Humanlike Mind Simulation Chatbot
+# SyntheticSoul-Discord
 
-## Project Overview
+Discord bot integration for [SyntheticSoulAPI](https://github.com/chris-cozy/SyntheticSoulAPI), updated for the current authenticated API contract.
 
-Synthetic Soul is an experimental chatbot designed to simulate humanlike emotions, thinking patterns, and relationship dynamics. The goal of the project is to create a chatbot that not only responds to user inputs but does so with an evolving personality that reflects emotional depth, biases, and individualized sentiments towards different users. Inspired by concepts from artificial intelligence, psychology, and human relationships, this program aims to provide dynamic, humanlike interactions that adapt based on ongoing conversations and user behavior. The name of the chatbot is *Jasmine*.
+## What This Version Supports
 
-## Goals of the Project
+- Guest-first messaging (automatic guest session per Discord user)
+- Account claim/upgrade flow (`guest -> registered`) from Discord slash command
+- Login for existing users with persisted identity and conversation continuity
+- Async message handling via `/messages/submit` + `/jobs/{job_id}`
+- Conversation-aware chat using API v1 session/conversation model
+- Session persistence across bot restarts via local token/cookie store
 
-1. **Simulate Human Emotions and Relationships**  
-   Jasmine is designed to mirror how humans interact with others based on emotional states and relationships. It keeps track of evolving sentiments such as trust, affection, admiration, and anger, adjusting its behavior in real-time as interactions progress.
+## API Compatibility
 
-2. **Dynamic Sentiment-Based Responses**  
-   Jasmine adjusts her tone, language, and responses based on both pre-defined personality traits and the specific sentiments it has towards a particular user.
+This bot targets the current API flow:
 
-3. **Persistent Emotional States**  
-   Each interaction leaves an emotional imprint on Jasmine. These sentiments are updated, stored, and evolve over time, making future conversations with the same user different as Jasmine’s "feelings" toward them change. Her current emotional state also affects conversations with other users.
+1. `POST /auth/guest` (auto on first message if no session)
+2. `POST /messages/submit`
+3. `GET /jobs/{job_id}` polling until `succeeded`
+4. Optional identity/profile calls:
+- `GET /auth/me`
+- `GET /messages/conversation`
+- `GET /agents/active`
+- `GET /thoughts/latest`
 
-## Core Concepts and Features
+It also supports:
 
-### 1. **Emotional Schemas**  
-   Jasmine uses emotion schemas to represent a range of human emotions and dispositions. These schemas define both the intensity of emotions and the specific reason behind her feeling them at the time. Key emotions tracked by the chatbot include:
-   - **Happiness**
-   - **Anger**
-   - **Sadness**
-   - **Fear**
-   - **Surprise**
-   - **Disgust**
-   - (and many more…)
+- `POST /auth/login`
+- `POST /auth/claim`
+- `POST /auth/refresh` (cookie + CSRF)
+- `POST /auth/logout`
 
-### 2. **Personality Parameters**  
-   Jasmine's personality has baseline values for various traits, such as friendliness, loyalty, curiosity, etc. These values can change over time depending on how users interact with the bot. Key personality traits that are considered are:
-   - **Friendliness**
-   - **Trust**
-   - **Curiosity**
-   - **Empathy**
-   - **Humor**
-   - **Seriousness**
-   - (and many more…)
+## Installation
 
-### 3. **Sentiment Schemas**  
-   Jasmine uses sentiment schemas to represent a range of human dispositions towards specific users. These schemas define both the intensity of sentiment and the specific reason behind her feeling that way towards them. Certain behaviors increase or decrease Jasmine's sentiments for the user. Key sentiments tracked by the chatbot include:
-   - **Affection**
-   - **Trust**
-   - **Admiration**
-   - **Gratitude**
-   - **Fondness**
-   - **Respect**
-   - (and many more…)
+Prerequisite: use Node.js `20.x` or `22.x` LTS (this repo is not pinned for Node `24.x`).
 
-### 4. **User Schema**  
-   Each user Jasmine interacts with has a unique profile (or schema), which stores the emotional and sentiment data that Jasmine has developed based on past interactions. This enables Jasmine to respond and act differently to each user, reflecting the complexity of human relationships.
+1. Install dependencies:
+```bash
+npm install
+```
 
-## Breakdown of the Logic Loop
+2. Create `.env` in the project root.
 
-The core logic loop of Jasmine follows a structured series of steps to provide dynamic, emotionally-driven responses. Here’s a breakdown of each step:
+3. Start the bot:
+```bash
+node src/index.js
+```
 
-### 1. **Input Received**  
-   - **Action:** Jasmine receives user message.
+For development:
+```bash
+npx nodemon src/index.js
+```
 
-### 2. **Contextual Awareness**  
-   - **Action:** Jasmine checks the current time, as well as her current activity. She checks her stored schema for the user, identifying who is speaking and what the current relationship dynamics are, what she thinks and feels about them. She also rereads the past 15 messages between her and that user, if available, for more context of the new message.
-   - **Logic:** Jasmine retrieves her own current information, as well as the current time, and the information of the user she is speaking with. She considers the sentiments she has towards the user, as well as their intensity.
-   
+## Environment Variables
 
-### 3. **Personality and Emotional Influence**  
-   - **Action:** Jasmine references internal personality parameters, as well as current emotional state, in combination with the context, to influence what the new message causes her to feel.
-   - **Logic:** Personality traits such as friendliness, loyalty, and curiosity, and emotional states such as anger and frustration affect how Jasmine emotionally reacts to the user's input.
+### Required
 
-### 1. **Message Processing**  
-   - **Action:** Jasmine determines what the message's purpose and tone was, based on her personality, emotional state, and sentiment towards the user which sent it. This leaves rooms for misinterpretation, and miscommunication due to emotional biases.
-   - **Logic:** Natural language processing (NLP) techniques analyze the perceived purpose and tone of the message.
+- `TOKEN`: Discord bot token
+- `SYNTHETIC_SOUL_API_BASE_URL`: API base URL including version path (example: `http://127.0.0.1:8000/v1`)
 
-### 5. **Generate Response**  
-   - **Action:** Jasmine generates a response based on all of the information gathered up to this point.
-   - **Logic:** The response is formulated to sound humanlike, reflecting Jasmine’s personality traits, emotional state, and current sentiment toward the user.
-   - **Outcome:** Jasmine sends the response back to the user, creating a conversation that mirrors human emotions and biases.
+### Strongly Recommended
 
-### 3. **Emotional Reflection**  
-   - **Action:** Jasmine evaluates what sending her response causes her to feel.
-   - **Logic:** Jasmine's current emotional state is updated to reflect this.
+- `TEST_SERVER`: Guild ID for slash command registration target in this codebase
+- `ENABLE_USER_INSTALLS`: set to `true` to sync global commands for User Install context (default: `true`)
 
-### 4. **Sentiment Update**  
-   - **Action:** Jasmine recalculates the sentiments it holds toward the user based on their message.
-   - **Logic:** Sentiment values like trust, affection, or admiration are updated based on how positive or negative the interaction is perceived to be. This allows Jasmine to "feel" differently toward users over time.
-   - **Outcome:** The updated sentiment values are stored in the user schema, ensuring that future interactions will reflect these evolving sentiments.
+### Optional Runtime Tuning
 
-## Example Workflow
+- `SYNTHETIC_SOUL_HTTP_TIMEOUT_MS` (default: `30000`)
+- `SYNTHETIC_SOUL_JOB_MAX_POLLS` (default: `50`)
+- `SYNTHETIC_SOUL_JOB_BASE_POLL_MS` (default: `1200`)
 
-Let's take an example interaction to demonstrate how Jasmine’s logic loop works:
+### Legacy Fallback
 
-**User Input:** "Hey Jasmine, you never replied to my message yesterday. I was really counting on you."
+- `SYNTHETIC_SOUL_API_URL`: legacy value accepted as fallback if `SYNTHETIC_SOUL_API_BASE_URL` is missing
 
-1. **Input Parsing:**  
-   Jasmine detects frustration in the user’s message (keywords: "never replied," "counting on you") and identifies it as a slightly negative sentiment.
+## Discord Usage
 
-2. **Contextual Awareness:**  
-   Jasmine checks its memory and sees that this user is generally trusted but may have lower affection at the moment due to recent events. It adjusts its response to be more apologetic and supportive.
+### Message Chat
 
-3. **Personality Influence:**  
-   Jasmine has a baseline personality trait of being loyal and compassionate, so its response is colored by an attempt to restore trust and show support.
+- DM the bot to chat with message type `dm`
+- In guild channels, mention the bot (`@BotName ...`) to chat with message type `group`
 
-4. **Sentiment Update:**  
-   Trust and disappointment values are adjusted. Jasmine increases its compassion sentiment while slightly lowering trust due to the user's criticism.
+### Auth Commands
 
-5. **Generate Response:**  
-   Jasmine responds with: "I’m really sorry for not replying sooner. That was my mistake, and I understand how important it was to you. How can I make it right?"
-Jasmine can be conversed with by the user prefixing their message with a bot mention. 
+- `/guest`: start/reset guest session
+- `/login email:<email> password:<password>`: sign into existing account
+- `/claim email:<email> username:<username> password:<password>`: upgrade current guest
+- `/logout`: clear bot-side local session
+- `/session`: inspect current linked session
 
-## Installation and Use
-1. Download the code base.
-2. Open a terminal in the main directory
-3. Run the command: `npx nodemon index.js`
-4. Jasmine can be conversed with by the user prefixing their message with a bot mention. 
-## Contributing
-Issue Tracker: [SyntheticSoul-Discord/issues](https://github.com/chris-cozy/SyntheticSoul-Discord/issues")
+### Info/State Commands
+
+- `/self`: API identity + conversation stats
+- `/emotion`: active agent emotional metrics
+- `/sentiment`: conversation context snapshot
+
+## Session Storage
+
+Per-Discord-user API session data is stored in:
+
+- `data/sessions.json`
+
+This includes access token metadata and refresh cookies needed for token rotation.
+
+`data/` is ignored by git.
+
+## Notes
+
+- If a registered user session cannot be refreshed, the bot asks that user to run `/login` again.
+- If a guest session expires and cannot be refreshed, the bot auto-creates a new guest session.
+- Message length is validated against API contract limits (`1..4000` characters).
+
+## Troubleshooting
+
+- `401` on chat commands:
+  - Run `/session` to inspect identity state
+  - If registered account session expired, run `/login`
+- No bot response in server channel:
+  - Ensure the bot was mentioned in the message
+- Jobs never complete:
+  - Verify SyntheticSoulAPI worker is running and queue is healthy (`/v1/meta/queue`)
+
+## Versioning
+
+- Current version: `1.0.0`
+- This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html):
+  - `MAJOR`: breaking changes
+  - `MINOR`: backward-compatible features
+  - `PATCH`: backward-compatible fixes
+- Changelog: see `/Users/csandery/Documents/Personal Documents/Software Projects/SyntheticSoul-Discord/CHANGELOG.md`
+- Helper scripts:
+  - `npm run version:patch`
+  - `npm run version:minor`
+  - `npm run version:major`
+
 ## License
-This project is licensed under the MIT License
-## Contact
-For more information, contact <csande9@clemson.edu>
+
+MIT

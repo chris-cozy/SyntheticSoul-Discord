@@ -19,9 +19,9 @@ module.exports = async (client, interaction) => {
         if (!commandObject) return;
 
         // If command has developer only perms, check if user is a developer
-        if (commandObject.devOnly) {
+        if (commandObject.devOnly || commandObject.devonly) {
             // Ephemeral - only person running the command can see the msg
-            if (interaction.member.id !== process.env.DEVELOPER_ID) {
+            if (interaction.user.id !== process.env.DEVELOPER_ID) {
                 interaction.reply({
                     content: 'Only developers are allowed to run this command',
                     ephemeral: true,
@@ -33,7 +33,7 @@ module.exports = async (client, interaction) => {
         // If command has test-only perms, check if server is the testing server
         if (commandObject.testOnly) {
             // Ephemeral - only person running the command can see the msg
-            if (!(interaction.guild.id === process.env.TEST_SERVER)) {
+            if (!interaction.guild || !(interaction.guild.id === process.env.TEST_SERVER)) {
                 interaction.reply({
                     content: 'This command cannot be run here.',
                     ephemeral: true,
@@ -45,13 +45,20 @@ module.exports = async (client, interaction) => {
         // Check if user has appropriate perms for command
         // ?. is optional chaining, it only activates if the attribute is present
         if (commandObject.permissionsRequired?.length) {
+            if (!interaction.member || !interaction.member.permissions) {
+                interaction.reply({
+                    content: 'This command can only be used inside a server.',
+                    ephemeral: true,
+                });
+                return;
+            }
             for (const permission of commandObject.permissionsRequired) {
                 if (!interaction.member.permissions.has(permission)) {
                     interaction.reply({
                         content: 'Not enough permissions.',
                         ephemeral: true,
                     });
-                    break;
+                    return;
                 }
             }
         }
@@ -59,6 +66,13 @@ module.exports = async (client, interaction) => {
         // Check if bot has appropriate perms to run the command
         // ?. is optional chaining, it only activates if the attribute is present
         if (commandObject.botPermissionsRequired?.length) {
+            if (!interaction.guild) {
+                interaction.reply({
+                    content: 'This command can only be used inside a server.',
+                    ephemeral: true,
+                });
+                return;
+            }
             for (const permission of commandObject.botPermissionsRequired) {
                 const bot = interaction.guild.members.me;
 
@@ -67,7 +81,7 @@ module.exports = async (client, interaction) => {
                         content: "I don't have permissions for that..",
                         ephemeral: true,
                     });
-                    break;
+                    return;
                 }
             }
         }
