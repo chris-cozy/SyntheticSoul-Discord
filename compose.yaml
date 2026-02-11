@@ -1,0 +1,16 @@
+services:
+  synthetic-soul-discord:
+    container_name: synthetic-soul-discord
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - synthetic-soul-discord-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  synthetic-soul-discord-data:

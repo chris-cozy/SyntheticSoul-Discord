@@ -44,13 +44,40 @@ npm install
 
 3. Start the bot:
 ```bash
-node src/index.js
+npm start
 ```
 
 For development:
 ```bash
-npx nodemon src/index.js
+npm run dev
 ```
+
+## Docker Deployment
+
+This repo includes `Dockerfile` and `compose.yaml` for long-running deployment.
+
+1. Create/update `.env` in the project root.
+
+2. Build and start:
+```bash
+docker compose up -d --build
+```
+
+3. Follow logs:
+```bash
+docker compose logs -f synthetic-soul-discord
+```
+
+4. Stop:
+```bash
+docker compose down
+```
+
+Notes:
+- Session state persists through the named volume `synthetic-soul-discord-data`
+- Set `SYNTHETIC_SOUL_API_BASE_URL` to a reachable API URL from inside this container.
+- If the API is in a different Compose project but published on the host (for example, `:8000`), use `http://host.docker.internal:8000/v1`.
+- If bot + API are in the same Compose project/network, use the API service name (example: `http://syntheticsoul-api:8000/v1`) instead of `127.0.0.1`.
 
 ## Environment Variables
 
