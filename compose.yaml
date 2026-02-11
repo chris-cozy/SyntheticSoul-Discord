@@ -11,6 +11,13 @@ services:
     volumes:
       - synthetic-soul-discord-data:/app/data
     restart: unless-stopped
+    networks:
+      - shared
 
 volumes:
   synthetic-soul-discord-data:
+
+networks:
+  shared:
+    name: ${SHARED_DOCKER_NETWORK:-synthetic-soul-shared}
+    external: true

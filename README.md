@@ -41,6 +41,7 @@ npm install
 ```
 
 2. Create `.env` in the project root.
+   - Start from `.env.example`
 
 3. Start the bot:
 ```bash
@@ -56,40 +57,47 @@ npm run dev
 
 This repo includes `Dockerfile` and `compose.yaml` for long-running deployment.
 
-1. Create/update `.env` in the project root.
+1. Create the shared Docker network once (same server as API stack):
+```bash
+docker network create synthetic-soul-shared
+```
 
-2. Build and start:
+2. Create/update `.env` in the project root.
+   - Start from `.env.example`
+
+3. Build and start:
 ```bash
 docker compose up -d --build
 ```
 
-3. Follow logs:
+4. Follow logs:
 ```bash
 docker compose logs -f synthetic-soul-discord
 ```
 
-4. Stop:
+5. Stop:
 ```bash
 docker compose down
 ```
 
 Notes:
 - Session state persists through the named volume `synthetic-soul-discord-data`
-- Set `SYNTHETIC_SOUL_API_BASE_URL` to a reachable API URL from inside this container.
-- If the API is in a different Compose project but published on the host (for example, `:8000`), use `http://host.docker.internal:8000/v1`.
-- If bot + API are in the same Compose project/network, use the API service name (example: `http://syntheticsoul-api:8000/v1`) instead of `127.0.0.1`.
+- This bot compose joins external network `${SHARED_DOCKER_NETWORK:-synthetic-soul-shared}`.
+- For private bot -> API calls across compose projects on the same server, use `SYNTHETIC_SOUL_API_BASE_URL=http://api:8000/v1`.
+- If API is host-published instead of shared-network attached, use `http://host.docker.internal:8000/v1`.
 
 ## Environment Variables
 
 ### Required
 
 - `TOKEN`: Discord bot token
-- `SYNTHETIC_SOUL_API_BASE_URL`: API base URL including version path (example: `http://127.0.0.1:8000/v1`)
+- `SYNTHETIC_SOUL_API_BASE_URL`: API base URL including version path (example: `http://api:8000/v1`)
 
 ### Strongly Recommended
 
 - `TEST_SERVER`: Guild ID for slash command registration target in this codebase
 - `ENABLE_USER_INSTALLS`: set to `true` to sync global commands for User Install context (default: `true`)
+- `SHARED_DOCKER_NETWORK`: external Docker network name (default expected by this repo: `synthetic-soul-shared`)
 
 ### Optional Runtime Tuning
 
